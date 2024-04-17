@@ -12,4 +12,7 @@ GitHub Actions workflow automatically generates slide deck (HTML and PDF) and pu
 
 # GitHub Pages にデプロイする
 
-既定のブランチ名は gh-pages のため gh-pages ブランチをあらかじめ作成しておく
+GitHub Pages として公開する既定のブランチ名は gh-pages のため gh-pages ブランチを作成する。
+
+https://github.com/[UserName]/[Repository]/settings/pages
+において Source : "Deploy from a branch" として gh-pages ブランチを選択する。
