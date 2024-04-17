@@ -9,3 +9,7 @@ Details:
 
 You can write and put Marp markdown files into this repository, then commit and push to GitHub.
 GitHub Actions workflow automatically generates slide deck (HTML and PDF) and publishes them on GitHub Pages.
+
+# GitHub Pages にデプロイする
+
+既定のブランチ名は gh-pages のため gh-pages ブランチをあらかじめ作成しておく
