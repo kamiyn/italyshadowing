@@ -201,7 +201,7 @@ gh workflow run deploy.yml --ref <branch-name>
 
 - `workflow_dispatch` の `Run workflow` ドロップダウンに目的のワークフローが現れるのは、ワークフローファイル自体がデフォルトブランチ (通常 `main`) にも存在する場合です。最初の `deploy.yml` 追加コミットは先に `main` に入れておく (最小構成で merge しておく) と、以後の作業ブランチからも起動できるようになります
 - `main` 以外のブランチから実行した場合でも、デプロイ先は同じ GitHub Pages サイトです。作業ブランチ由来のビルドで一時的に上書きされるため、検証後は `main` を再デプロイして元に戻すか、別リポジトリ/別環境で検証することを推奨します
-- `concurrency: { group: pages, cancel-in-progress: true }` を設定しているため、直前のデプロイが実行中の場合は自動的にキャンセルされ、最新の起動が優先されます
+- `concurrency: { group: pages, cancel-in-progress: false }` を設定しているため、直前のデプロイが実行中の場合は完走を待ってから次が走ります (公式 GitHub Pages starter workflow に準拠)。本番デプロイが途中で殺されて Pages が中途半端な状態で固まる事故を防ぐための設定です。連続起動した場合、in-progress と最新キュー以外の中間 run はスキップされます
 
 ## 関連ドキュメント
 
