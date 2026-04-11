@@ -217,8 +217,17 @@ useKeyboard((event) => {
    * - 全体的に文字を大きく/小さくしたい場合は 3 つの値をすべて同じ比率で増減してください。
    * - 画面幅への追従の強さを変えたい場合は中央 (vw 単位) の値だけを変更してください。
    * - 例: 元のサイズに戻す → clamp(1.5rem, 4vw, 2.75rem)
+   *
+   * --reader-font-scale はユーザーの HomePage スライダー設定値で、
+   * src/composables/useFontScale.js が documentElement に書き込む。
+   * 既定値 1 は localStorage 未保存時のフォールバックで、CSS 変数の
+   * 第二引数 (`var(name, fallback)`) として渡している。
    */
-  font-size: clamp(3rem, 8vw, 5.5rem);
+  font-size: clamp(
+    calc(3rem * var(--reader-font-scale, 1)),
+    calc(8vw * var(--reader-font-scale, 1)),
+    calc(5.5rem * var(--reader-font-scale, 1))
+  );
   line-height: 1.5;
   width: 100%;
   /*

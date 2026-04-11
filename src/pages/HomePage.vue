@@ -4,10 +4,18 @@ import { useRouter } from 'vue-router'
 import { fetchIndex } from '../lib/dataClient.js'
 import {
   KEY_ARROW_DOWN,
+  KEY_ARROW_LEFT,
+  KEY_ARROW_RIGHT,
   KEY_ARROW_UP,
   KEY_ENTER,
 } from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
+import {
+  useFontScale,
+  FONT_SCALE_MIN,
+  FONT_SCALE_MAX,
+  FONT_SCALE_STEP,
+} from '../composables/useFontScale.js'
 
 const router = useRouter()
 const lessons = ref([])
@@ -35,6 +43,35 @@ const hasLessons = computed(() => lessons.value.length > 0)
 const isEmptyState = computed(() => !isLoading.value && !error.value && !hasLessons.value)
 const showHint = computed(() => !error.value && !isLoading.value && hasLessons.value)
 
+const { fontScale, setFontScale, persistFontScale } = useFontScale()
+// スライダーの thumb-label に出すパーセント表記。テンプレート側に算術を
+// 書かないため computed に寄せる。
+const fontScalePercent = computed(() => `${Math.round(fontScale.value * 100)}%`)
+
+// スライダードラッグ中フラグ。ドラッグ中は localStorage への永続化を抑制し、
+// @end イベントでまとめて 1 回だけ persistFontScale() を呼ぶ。
+// これにより同期 setItem がドラッグ中のメインスレッドをブロックして体感の
+// 引っかかりを起こすのを防ぐ。
+const isDraggingFontScale = ref(false)
+
+function onFontScaleSliderUpdate(value) {
+  setFontScale(value)
+  // キーボードでの slider 操作 (フォーカス時の ←/→) は @start/@end を伴わない
+  // ため isDraggingFontScale が false のまま @update:model-value だけが届く。
+  // この場合は 1 操作 = 1 keystroke なのでその場で永続化してよい。
+  // ドラッグ中 (= isDraggingFontScale=true) はここでは保存せず @end に委ねる。
+  if (!isDraggingFontScale.value) persistFontScale()
+}
+
+function onFontScaleSliderStart() {
+  isDraggingFontScale.value = true
+}
+
+function onFontScaleSliderEnd() {
+  isDraggingFontScale.value = false
+  persistFontScale()
+}
+
 function openSelected() {
   const lesson = lessons.value[selectedIndex.value]
   if (!lesson) return
@@ -46,7 +83,30 @@ function selectAndOpen(index) {
   openSelected()
 }
 
+// フォントサイズ調整 (←/→)。スライダーがフォーカスされている場合は
+// useKeyboard 側が text-entry 要素に対する keydown ハンドラ実行を skip するため
+// Vuetify ネイティブのスライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
+//
+// 値の clamp / 量子化は useFontScale.js の setFontScale が集約処理する。
+// 1 keystroke = 1 完結操作なので、その場で永続化までまとめて行う。
+function adjustFontScale(delta) {
+  setFontScale(fontScale.value + delta)
+  persistFontScale()
+}
+
 useKeyboard((event) => {
+  switch (event.key) {
+    case KEY_ARROW_LEFT:
+      event.preventDefault()
+      adjustFontScale(-FONT_SCALE_STEP)
+      return
+    case KEY_ARROW_RIGHT:
+      event.preventDefault()
+      adjustFontScale(FONT_SCALE_STEP)
+      return
+  }
+  // 教材リスト操作系は教材が無いと意味が無いのでここで早期 return。
+  // フォントサイズ操作はリスト有無に依存しないので上のブロックで先に処理する。
   if (lessons.value.length === 0) return
   switch (event.key) {
     case KEY_ARROW_UP:
@@ -111,6 +171,43 @@ useKeyboard((event) => {
       >
         ↑ ↓ で選択 / Enter で開く
       </p>
+      <section
+        class="font-size-section"
+        aria-labelledby="font-size-section-heading"
+      >
+        <h2
+          id="font-size-section-heading"
+          class="font-size-heading"
+        >
+          表示フォントサイズ
+        </h2>
+        <div class="font-size-preview-box">
+          <span class="font-size-preview">Lorem Ipsum</span>
+        </div>
+        <!--
+          aria-labelledby で h2 見出しと slider を紐付ける。これにより
+          スクリーンリーダーで slider にフォーカスした際「表示フォントサイズ
+          スライダー 現在値 …」のように読み上げられ、何を調整するスライダー
+          か分かるようになる。Vuetify v-slider は内部 input role="slider"
+          要素に aria-* 属性を pass-through する。
+        -->
+        <v-slider
+          :model-value="fontScale"
+          :min="FONT_SCALE_MIN"
+          :max="FONT_SCALE_MAX"
+          :step="FONT_SCALE_STEP"
+          aria-labelledby="font-size-section-heading"
+          thumb-label
+          hide-details
+          @update:model-value="onFontScaleSliderUpdate"
+          @start="onFontScaleSliderStart"
+          @end="onFontScaleSliderEnd"
+        >
+          <template #thumb-label>
+            {{ fontScalePercent }}
+          </template>
+        </v-slider>
+      </section>
     </v-container>
   </v-main>
 </template>
@@ -150,5 +247,43 @@ useKeyboard((event) => {
 
 .home-loading {
   color: rgba(var(--v-theme-on-background), 0.6);
+}
+
+.font-size-section {
+  margin-top: 2.5rem;
+}
+
+.font-size-heading {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-background), 0.7);
+  margin: 0 0 0.75rem;
+}
+
+/*
+ * プレビューは ReaderPage の .reader-line と全く同じ font-size 計算式を使う。
+ * こうすることで HomePage で見ているサイズがそのまま教材表示時のサイズになる。
+ * 高倍率でフレーム外にはみ出る場合があるので overflow: hidden で両端を切る。
+ */
+.font-size-preview-box {
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.font-size-preview {
+  display: inline-block;
+  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
+  font-weight: 500;
+  font-optical-sizing: auto;
+  color: rgb(var(--v-theme-readerBody));
+  font-size: clamp(
+    calc(3rem * var(--reader-font-scale, 1)),
+    calc(8vw * var(--reader-font-scale, 1)),
+    calc(5.5rem * var(--reader-font-scale, 1))
+  );
+  line-height: 1.2;
+  white-space: nowrap;
 }
 </style>
