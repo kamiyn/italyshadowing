@@ -111,18 +111,24 @@ useKeyboard((event) => {
         {{ error }}
       </p>
       <div
-        v-else-if="lines.length === 0"
+        v-else-if="lesson === null"
         class="reader-loading"
       >
         Loading...
       </div>
+      <p
+        v-else-if="lines.length === 0"
+        class="reader-empty"
+      >
+        この教材には表示できる行がありません。
+      </p>
       <div
         v-else
         class="reader-line"
         v-html="currentLine"
       />
       <p
-        v-if="lines.length > 0"
+        v-if="lesson !== null && lines.length > 0"
         class="reader-progress"
       >
         {{ effectivePage + 1 }} / {{ lines.length }}
@@ -178,5 +184,10 @@ useKeyboard((event) => {
 
 .reader-loading {
   color: rgba(var(--v-theme-on-background), 0.6);
+}
+
+.reader-empty {
+  color: rgba(var(--v-theme-on-background), 0.6);
+  font-size: 1.25rem;
 }
 </style>

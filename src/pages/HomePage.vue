@@ -8,6 +8,9 @@ const router = useRouter()
 const lessons = ref([])
 const selectedIndex = ref(0)
 const error = ref(null)
+// 取得完了前は isLoading=true。これがないと初期 lessons=[] の状態で
+// 空 state メッセージが一瞬表示されてしまう。
+const isLoading = ref(true)
 
 onMounted(async () => {
   try {
@@ -16,6 +19,9 @@ onMounted(async () => {
   }
   catch (e) {
     error.value = String(e)
+  }
+  finally {
+    isLoading.value = false
   }
 })
 
@@ -55,6 +61,12 @@ useKeyboard((event) => {
         class="home-error"
       >
         {{ error }}
+      </p>
+      <p
+        v-else-if="isLoading"
+        class="home-loading"
+      >
+        Loading...
       </p>
       <p
         v-else-if="lessons.length === 0"
@@ -115,6 +127,10 @@ useKeyboard((event) => {
 }
 
 .home-empty {
+  color: rgba(var(--v-theme-on-background), 0.6);
+}
+
+.home-loading {
   color: rgba(var(--v-theme-on-background), 0.6);
 }
 </style>
