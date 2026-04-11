@@ -143,7 +143,8 @@ useKeyboard((event) => {
       break
     case KEY_ARROW_RIGHT:
     case KEY_SPACE:
-      // Space also advances. Prevent the default page scroll.
+      // Right Arrow and Space both advance. Prevent default behavior
+      // (including Space page scroll) in this shared handler.
       event.preventDefault()
       advanceOrExit()
       break
