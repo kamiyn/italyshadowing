@@ -2,6 +2,11 @@
 import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchIndex } from '../lib/dataClient.js'
+import {
+  KEY_ARROW_DOWN,
+  KEY_ARROW_UP,
+  KEY_ENTER,
+} from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
 
 const router = useRouter()
@@ -44,15 +49,15 @@ function selectAndOpen(index) {
 useKeyboard((event) => {
   if (lessons.value.length === 0) return
   switch (event.key) {
-    case 'ArrowUp':
+    case KEY_ARROW_UP:
       event.preventDefault()
       selectedIndex.value = Math.max(0, selectedIndex.value - 1)
       break
-    case 'ArrowDown':
+    case KEY_ARROW_DOWN:
       event.preventDefault()
       selectedIndex.value = Math.min(lessons.value.length - 1, selectedIndex.value + 1)
       break
-    case 'Enter':
+    case KEY_ENTER:
       event.preventDefault()
       openSelected()
       break

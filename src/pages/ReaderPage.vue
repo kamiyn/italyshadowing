@@ -2,6 +2,12 @@
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchLesson } from '../lib/dataClient.js'
+import {
+  KEY_ARROW_LEFT,
+  KEY_ARROW_RIGHT,
+  KEY_ARROW_UP,
+  KEY_SPACE,
+} from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
 
 const props = defineProps({
@@ -111,20 +117,20 @@ function goToPage(next) {
 
 useKeyboard((event) => {
   switch (event.key) {
-    case 'ArrowLeft':
+    case KEY_ARROW_LEFT:
       event.preventDefault()
       goToPage(effectivePage.value - 1)
       break
-    case 'ArrowRight':
+    case KEY_ARROW_RIGHT:
       event.preventDefault()
       goToPage(effectivePage.value + 1)
       break
-    case ' ':
+    case KEY_SPACE:
       // Space also advances. Prevent the default page scroll.
       event.preventDefault()
       goToPage(effectivePage.value + 1)
       break
-    case 'ArrowUp':
+    case KEY_ARROW_UP:
       event.preventDefault()
       router.push('/')
       break
