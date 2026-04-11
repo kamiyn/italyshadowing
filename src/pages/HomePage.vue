@@ -28,7 +28,7 @@ onMounted(async () => {
 function openSelected() {
   const lesson = lessons.value[selectedIndex.value]
   if (!lesson) return
-  router.push(`/${lesson.filename}`)
+  router.push({ name: 'reader', params: { filename: lesson.filename } })
 }
 
 useKeyboard((event) => {
