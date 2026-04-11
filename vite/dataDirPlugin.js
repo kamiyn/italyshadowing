@@ -2,7 +2,7 @@ import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
 // Serve repo-root data/ during dev and copy it into dist/data/ at build time.
-// Kept inline (rather than depending on vite-plugin-static-copy) to avoid an
+// Kept local (rather than depending on vite-plugin-static-copy) to avoid an
 // extra dev dependency for what is a ~30 line copy step.
 export default function dataDirPlugin({ base, dataDir }) {
   const urlPrefixes = ['/data/', `${base}data/`]
