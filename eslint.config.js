@@ -21,7 +21,7 @@ export default createConfigForNuxt({
     name: 'italyshadowing/rules',
     rules: {
       // v-html is required by spec: lessons embed simple HTML markup like <b>.
-      // Data is repository-managed and trusted (see Architecture.md).
+      // Data is repository-managed and trusted (see Documents/Architecture.md).
       'vue/no-v-html': 'off',
     },
   })

@@ -1,6 +1,6 @@
 # Coding Conventions
 
-本ファイルはアプリケーション仕様に依存しない一般コーディング規約をまとめたものです。プロジェクト固有の実装判断は `Documents/ADR-*.md` に分離しています。機能仕様・セットアップ手順は `README.md` / `Documents/Plan.md` / `Architecture.md` を参照してください。
+本ファイルはアプリケーション仕様に依存しない一般コーディング規約をまとめたものです。プロジェクト固有の実装判断は `Documents/ADR-*.md` に分離しています。機能仕様・セットアップ手順は `README.md` / `Documents/Plan.md` / `Documents/Architecture.md` を参照してください。
 
 ## `.vue` テンプレート内の式は短い参照だけに留める
 
