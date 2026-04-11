@@ -212,7 +212,9 @@ flowchart TD
   - `lines` の HTML 描画
   - メタ情報の非表示制御
   - 読書中のキー操作
-- ルーター
+  - `validate-lessons` 実行
+  - `lint-fix` 実行
+  - `validate-lessons` / `lint-fix` 失敗時のビルド停止
   - `filename` と `page` の解釈
   - URL 更新による状態遷移
 - ビルドパイプライン (`package.json` の `scripts.build`)
