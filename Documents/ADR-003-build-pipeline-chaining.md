@@ -31,7 +31,7 @@ Accepted
 ## Rationale
 
 - **順序の明示性**: 3 ステップの順序がスクリプト文面から一目で読める。`prebuild` フックは暗黙実行になるため、どの順でどのステップが走るかが `package.json` を横に読まないと分からない。
-- **中断挙動が自然**: `&&` は先行コマンドが非ゼロ終了なら後続を実行しないため、`lint-fix` が未修正エラーで落ちた時点で `vite build` に進まず中断する、という仕様要件 (`README.md` 「ビルド時の前処理」) を追加コードなしで満たす。
+- **中断挙動が自然**: `&&` は先行コマンドが非ゼロ終了なら後続を実行しないため、`lint-fix` が未修正エラーで落ちた時点で `vite build` に進まず中断する、という仕様要件 (`Development.md` 「ビルド時の前処理」) を追加コードなしで満たす。
 - **generate-index は fail-loud**: ADR-001 の教材ファイル名バリデーションで違反を検出したら非ゼロ終了する。これが `&&` で後段のビルドを即座に停止させる。
 - **Vite プラグイン不採用理由**: `lint-fix` を build 前に走らせる性質上、Vite の lifecycle フック内ではなく build プロセスの外側で直列化する必要がある。
 
@@ -39,11 +39,11 @@ Accepted
 
 - Pros: 順序が明示的、abort 挙動が自然、npm 標準機能のみで完結、ローカル実行と CI の挙動が一致。
 - Cons: `&&` はシェル依存の形式。現時点では GitHub Actions (Ubuntu) とローカル (Linux/macOS/WSL) の双方で動作確認済み。Windows cmd.exe でも `&&` は有効だが、クロスプラットフォーム化時は留意が必要。
-- 変更時の注意: ステップを追加・並べ替える際は `README.md` 「ビルド時の前処理」セクションと整合させる。
+- 変更時の注意: ステップを追加・並べ替える際は [`Development.md`](Development.md) 「ビルド時の前処理」セクションと整合させる。
 
 ## References
 
-- `README.md` 「ビルド時の前処理」
+- [`Development.md`](Development.md) 「ビルド時の前処理」 (旧 `README.md` から移動。PR #9 で再配置)
 - `package.json` `scripts.build`
 - `.github/workflows/deploy.yml` build job
 - ADR-001: 教材ファイル名正規表現の重複管理 (generate-index の fail-loud 挙動の前提)
