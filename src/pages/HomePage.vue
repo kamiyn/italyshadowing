@@ -4,10 +4,18 @@ import { useRouter } from 'vue-router'
 import { fetchIndex } from '../lib/dataClient.js'
 import {
   KEY_ARROW_DOWN,
+  KEY_ARROW_LEFT,
+  KEY_ARROW_RIGHT,
   KEY_ARROW_UP,
   KEY_ENTER,
 } from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
+import {
+  useFontScale,
+  FONT_SCALE_MIN,
+  FONT_SCALE_MAX,
+  FONT_SCALE_STEP,
+} from '../composables/useFontScale.js'
 
 const router = useRouter()
 const lessons = ref([])
@@ -35,6 +43,11 @@ const hasLessons = computed(() => lessons.value.length > 0)
 const isEmptyState = computed(() => !isLoading.value && !error.value && !hasLessons.value)
 const showHint = computed(() => !error.value && !isLoading.value && hasLessons.value)
 
+const { fontScale } = useFontScale()
+// スライダーの thumb-label に出すパーセント表記。テンプレート側に算術を
+// 書かないため computed に寄せる。
+const fontScalePercent = computed(() => `${Math.round(fontScale.value * 100)}%`)
+
 function openSelected() {
   const lesson = lessons.value[selectedIndex.value]
   if (!lesson) return
@@ -46,7 +59,30 @@ function selectAndOpen(index) {
   openSelected()
 }
 
+// フォントサイズ調整 (←/→)。スライダーがフォーカスされている場合は
+// useKeyboard 側が input イベントを skip するため Vuetify ネイティブの
+// スライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
+function adjustFontScale(delta) {
+  const next = fontScale.value + delta
+  const clamped = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, next))
+  // 浮動小数誤差で 0.05 刻みが 0.05000000000000001 のような値にならないよう
+  // ステップ単位で丸める。STEP=0.05 なら小数 2 桁。
+  fontScale.value = Math.round(clamped / FONT_SCALE_STEP) * FONT_SCALE_STEP
+}
+
 useKeyboard((event) => {
+  switch (event.key) {
+    case KEY_ARROW_LEFT:
+      event.preventDefault()
+      adjustFontScale(-FONT_SCALE_STEP)
+      return
+    case KEY_ARROW_RIGHT:
+      event.preventDefault()
+      adjustFontScale(FONT_SCALE_STEP)
+      return
+  }
+  // 教材リスト操作系は教材が無いと意味が無いのでここで早期 return。
+  // フォントサイズ操作はリスト有無に依存しないので上のブロックで先に処理する。
   if (lessons.value.length === 0) return
   switch (event.key) {
     case KEY_ARROW_UP:
@@ -111,6 +147,26 @@ useKeyboard((event) => {
       >
         ↑ ↓ で選択 / Enter で開く
       </p>
+      <section class="font-size-section">
+        <h2 class="font-size-heading">
+          表示フォントサイズ
+        </h2>
+        <div class="font-size-preview-box">
+          <span class="font-size-preview">Lorem Ipsum</span>
+        </div>
+        <v-slider
+          v-model="fontScale"
+          :min="FONT_SCALE_MIN"
+          :max="FONT_SCALE_MAX"
+          :step="FONT_SCALE_STEP"
+          thumb-label
+          hide-details
+        >
+          <template #thumb-label>
+            {{ fontScalePercent }}
+          </template>
+        </v-slider>
+      </section>
     </v-container>
   </v-main>
 </template>
@@ -150,5 +206,43 @@ useKeyboard((event) => {
 
 .home-loading {
   color: rgba(var(--v-theme-on-background), 0.6);
+}
+
+.font-size-section {
+  margin-top: 2.5rem;
+}
+
+.font-size-heading {
+  font-size: 1rem;
+  font-weight: 500;
+  color: rgba(var(--v-theme-on-background), 0.7);
+  margin: 0 0 0.75rem;
+}
+
+/*
+ * プレビューは ReaderPage の .reader-line と全く同じ font-size 計算式を使う。
+ * こうすることで HomePage で見ているサイズがそのまま教材表示時のサイズになる。
+ * 高倍率でフレーム外にはみ出る場合があるので overflow: hidden で両端を切る。
+ */
+.font-size-preview-box {
+  width: 100%;
+  overflow: hidden;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.font-size-preview {
+  display: inline-block;
+  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
+  font-weight: 500;
+  font-optical-sizing: auto;
+  color: rgb(var(--v-theme-readerBody));
+  font-size: clamp(
+    calc(3rem * var(--reader-font-scale, 1)),
+    calc(8vw * var(--reader-font-scale, 1)),
+    calc(5.5rem * var(--reader-font-scale, 1))
+  );
+  line-height: 1.2;
+  white-space: nowrap;
 }
 </style>
