@@ -1,0 +1,194 @@
+# Architecture
+
+## 目的
+
+このアプリケーションは、シャドーイング教材を 1 行ずつ表示し、キーボード主体でテンポ良く学習できるようにすることを目的とする。教材は静的な JSON ファイルとして管理し、アプリ全体も静的サイトとして配信する。
+
+## 設計原則
+
+- 単機能アプリとして構成し、複雑なサーバーサイド機能は持たない
+- Nuxt は使わず、Vue + Vite Rolldown + Vuetify で構築する
+- 教材データはリポジトリ管理下の静的ファイルとして扱う
+- URL を状態の正本とし、ページ位置を `?page=` で表現する
+- キーボード操作だけで主要な導線を完結できるようにする
+
+## システム全体像
+
+```mermaid
+flowchart TD
+    user[User] --> homePage[HomePage]
+    user --> readerPage[ReaderPage]
+    homePage --> indexJson["data/index.json"]
+    readerPage --> lessonJson["data/<filename>.json"]
+    readerPage --> routerState[RouteQueryState]
+    buildScript[BuildScript] --> dataDir["data/*.json"]
+    buildScript --> indexJson
+    ciWorkflow[GitHubActions] --> buildScript
+    ciWorkflow --> staticSite[StaticSiteArtifacts]
+    staticSite --> githubPages[GitHubPages]
+```
+
+## 画面構成
+
+### 1. HomePage
+
+トップページの責務は教材一覧の表示と選択である。
+
+- `data/index.json` を読み込み、教材一覧を表示する
+- 現在選択中の教材を内部状態として保持する
+- `ArrowUp` / `ArrowDown` で選択を移動する
+- `Enter` で選択中教材の先頭ページへ遷移する
+
+### 2. ReaderPage
+
+教材ページの責務は、選択された教材の 1 行を現在ページとして描画することである。
+
+- ルートパラメータから `filename` を取得する
+- クエリから `page` を取得し、現在ページ番号として解釈する
+- 対応する JSON ファイルを読み込む
+- 配列の該当要素を HTML として表示する
+- `ArrowLeft` / `ArrowRight` で前後ページへ移動する
+- `ArrowUp` でトップページへ戻る
+
+トップページと教材ページは、Vue 的には別コンポーネントとして分離する。
+
+## データ設計
+
+### 教材ファイル
+
+- 保存場所: `data/<filename>.json`
+- 形式: 文字列配列
+- 意味: 各配列要素が 1 ページ分の表示内容
+
+例:
+
+```json
+[
+  "Prima riga",
+  "<b>Seconda riga</b>",
+  "Terza riga"
+]
+```
+
+### 一覧ファイル
+
+- 保存場所: `data/index.json`
+- 役割: トップページで表示する教材一覧の正本
+- 更新方式: ビルド前またはビルド時に `data/` を走査して再生成する
+
+`data/index.json` には最低限、教材ファイル名の一覧が必要である。拡張性を考えると、将来的には表示名や並び順を含められる構造にしてもよいが、初期実装ではファイル名一覧のみで十分である。
+
+## ルーティングと状態管理
+
+URL をそのまま画面状態として利用する。
+
+- `/`
+  - 教材一覧を表示する
+- `/<filename>`
+  - `page` 未指定時は先頭ページを表示する
+- `/<filename>?page=<page>`
+  - 指定ページを表示する
+
+内部では次のように状態を解釈する。
+
+- `filename`
+  - 表示対象教材を識別する
+- `page`
+  - 配列インデックスに対応する表示位置
+  - 未指定時は 0 扱い
+  - 負数、非数値、範囲外は有効範囲へ補正する
+
+この設計により、ブラウザ再読み込みや URL 共有時にも同じ教材・同じページを再現できる。
+
+## 表示責務
+
+教材データの各文字列は HTML として描画する。`<b>` などの軽い装飾を前提にしているため、プレーンテキストではなく HTML 出力が必要になる。
+
+そのため、設計上は次の前提を置く。
+
+- 入力データはユーザー投稿ではなく、リポジトリ管理下の信頼済み教材とする
+- HTML の許容範囲は教材記述に必要な最小限を想定する
+- 表示用スタイルは各 `.vue` 内で定義する
+
+## 処理フロー
+
+### 起動から表示ページ決定まで
+
+```mermaid
+flowchart TD
+    appStart[AppStart] --> routeCheck{IsTopRoute}
+    routeCheck -->|yes| loadIndex[LoadIndexJson]
+    loadIndex --> showList[RenderHomePage]
+    routeCheck -->|no| parseRoute[ParseFilenameAndPage]
+    parseRoute --> loadLesson[LoadLessonJson]
+    loadLesson --> normalizePage[NormalizePageRange]
+    normalizePage --> renderLesson[RenderReaderPage]
+```
+
+### キー入力から画面遷移まで
+
+```mermaid
+flowchart TD
+    keyInput[KeyInput] --> pageType{CurrentPageType}
+    pageType -->|home| homeKey{ArrowUpDownOrEnter}
+    homeKey -->|ArrowUp| selectPrev[SelectPreviousItem]
+    homeKey -->|ArrowDown| selectNext[SelectNextItem]
+    homeKey -->|Enter| openLesson[NavigateToLessonFirstPage]
+    pageType -->|reader| readerKey{ArrowLeftRightOrUp}
+    readerKey -->|ArrowLeft| goPrev[NavigateToPreviousPage]
+    readerKey -->|ArrowRight| goNext[NavigateToNextPage]
+    readerKey -->|ArrowUp| goHome[NavigateToHome]
+```
+
+### ビルド時の教材一覧更新
+
+```mermaid
+flowchart TD
+    buildStart[BuildStart] --> scanDataDir[ScanDataDirectory]
+    scanDataDir --> filterJson[FilterLessonJsonFiles]
+    filterJson --> generateIndex[GenerateIndexJson]
+    generateIndex --> writeIndex[WriteDataIndexJson]
+    writeIndex --> runViteBuild[RunViteRolldownBuild]
+    runViteBuild --> publishArtifacts[PublishStaticArtifacts]
+```
+
+## ビルドと配備
+
+### ビルド
+
+- Vite Rolldown でアプリをビルドする
+- ビルド前に `data/` を走査し、`data/index.json` を更新する
+- 出力物は静的ファイルとして生成する
+
+### 配備
+
+- GitHub Actions でビルドを自動実行する
+- 生成された静的ファイルを GitHub Pages に配置する
+- 実行時に必要なサーバー処理は持たない
+
+## 主要な責務分割
+
+- `HomePage`
+  - 教材一覧取得
+  - 選択状態管理
+  - 一覧上のキー操作
+- `ReaderPage`
+  - 教材取得
+  - ページ番号補正
+  - HTML 描画
+  - 読書中のキー操作
+- ルーター
+  - `filename` と `page` の解釈
+  - URL 更新による状態遷移
+- ビルドスクリプト
+  - `data/` 走査
+  - `data/index.json` 更新
+- GitHub Actions
+  - ビルドと GitHub Pages 公開
+
+## 今後の実装時に意識する点
+
+- ページ範囲外の移動時の挙動を明確にする
+- キー操作がフォーム要素と競合しないようにする
+- HTML 描画は信頼済みデータを前提にしつつ、データ投入経路を限定する
+- トップページの選択状態を視覚的に分かりやすくする
