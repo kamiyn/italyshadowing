@@ -27,9 +27,13 @@ function clampScale(value) {
 
 function loadInitial() {
   if (typeof window === 'undefined') return FONT_SCALE_DEFAULT
-  const raw = window.localStorage.getItem(STORAGE_KEY)
-  if (raw == null) return FONT_SCALE_DEFAULT
-  return clampScale(Number.parseFloat(raw))
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (raw == null) return FONT_SCALE_DEFAULT
+    return clampScale(Number.parseFloat(raw))
+  } catch {
+    return FONT_SCALE_DEFAULT
+  }
 }
 
 function applyToDom(value) {
