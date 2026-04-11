@@ -186,6 +186,8 @@ useKeyboard((event) => {
   /* 上下は 2rem、左右は画面幅の 10% を余白として確保する */
   padding: 2rem 10%;
   text-align: center;
+  /* .reader-progress を画面上端に絶対配置するための基準 */
+  position: relative;
 }
 
 .reader-line {
@@ -233,7 +235,17 @@ useKeyboard((event) => {
 }
 
 .reader-progress {
-  margin-top: 2rem;
+  /*
+   * 本文 (.reader-line) から視覚的に最大限離すため画面上端へ絶対配置する。
+   * フレックスフロー外に出すことで、.reader-line は .reader-shell の
+   * 中央配置 (justify-content: center) を維持する。
+   * 文字サイズは従来通り 0.875rem を維持。
+   */
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
   color: rgba(var(--v-theme-on-background), 0.6);
   font-size: 0.875rem;
 }
