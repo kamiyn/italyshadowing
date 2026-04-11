@@ -30,9 +30,15 @@ function resolveRepoSubpath() {
 }
 
 function resolveBase() {
+  // ASSET_PREFIX が「未設定」と「明示的に空文字」では意味が異なる:
+  //   - 未設定 (undefined): configure-pages が走っていないローカル / CI 外 →
+  //     リポジトリ名のサブパスにフォールバック
+  //   - 空文字 ('')   : カスタムドメインなどでルート配備する明示的指示 → '/'
+  // truthy 判定 (`if (fromEnv)`) だと空文字をフォールバック側に流してしまい
+  // ルート配備時にアセット URL が壊れるため、null/undefined だけを未設定として扱う。
   const fromEnv = process.env.ASSET_PREFIX
-  if (fromEnv) return normalizeBasePath(fromEnv)
-  return resolveRepoSubpath()
+  if (fromEnv == null) return resolveRepoSubpath()
+  return normalizeBasePath(fromEnv)
 }
 
 const BASE = resolveBase()
