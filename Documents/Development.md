@@ -41,8 +41,9 @@ npm run dev
 
 ## ビルド時の前処理
 
-ビルドプロセスでは、Vite の本ビルドの前に次を実行します。
+ビルドプロセスでは、Vite の本ビルドの前に次を実行します (ADR-003 参照)。
 
+- `validate-lessons` を実行し、`data/` 配下の各教材 JSON のファイル名 (ADR-001 の regex) と JSON 構造 (`title` / `description` / `lines` の型) を検証する。違反があれば即座にビルド全体を停止する
 - `lint-fix` を実行してソース整形と lint 修正を反映する
 - `lint-fix` で解決できないエラーが残った場合は、その時点でビルドを停止する
 

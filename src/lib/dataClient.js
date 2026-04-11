@@ -23,9 +23,15 @@ const lessonModules = import.meta.glob('../../data/*.json', {
   import: 'default',
 })
 
-// 起動時に 1 度だけ map を構築する。fail-loud にして bad filename を含む repo
-// 状態は dev 起動直後 / 初回 page load 時に即座に検出する。旧 generate-index.mjs
-// が build 時に担っていた検証責務をここに移管した (ADR-001 参照)。
+// 起動時に 1 度だけ map を構築する。fail-loud 検証 (defense in depth)。
+//
+// メインの build-time 検証は scripts/validate-lessons.mjs が
+// `npm run build` の最初のステップ (Node プロセス) で走らせるため、
+// CI / ローカル build はそこで止まる。本ブロックは validate-lessons を
+// 経由しない `vite dev` 直接起動や、何らかの経路でバンドルが browser に
+// 落ちた場合の最終防御として並走する。
+//
+// 詳細: ADR-001 (4 箇所重複管理) / ADR-003 (build pipeline 3 ステップ)。
 const lessons = Object.fromEntries(
   Object.entries(lessonModules).map(([modulePath, lesson]) => {
     const filename = modulePath.split('/').pop().replace(/\.json$/, '')

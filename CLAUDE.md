@@ -153,8 +153,8 @@ GitHub Pages のサブパス配備等では、`/...` のリテラル指定は de
 
 アプリ固有の実装判断は以下の ADR に分離してあります。コードを変更する前に該当 ADR を確認してください (特に regex を 1 箇所変更するような場合)。
 
-- `Documents/ADR-001-filename-pattern-duplication.md` — 教材ファイル名 regex `^[A-Za-z0-9_-]+$` を 3 箇所 (router / dataClient / README) に重複管理する決定と**全箇所同時更新の義務**
+- `Documents/ADR-001-filename-pattern-duplication.md` — 教材ファイル名 regex `^[A-Za-z0-9_-]+$` を 4 箇所 (router / dataClient / validate-lessons / README) に重複管理する決定と**全箇所同時更新の義務**
 - `Documents/ADR-002-keyboard-key-local-constants.md` — キー定数をローカル `src/lib/keys.js` に置く決定と、types-only パッケージ不採用の理由
-- `Documents/ADR-003-build-pipeline-chaining.md` — `lint-fix → vite build` を npm `&&` で直列化する決定と、`prebuild` フック / Vite プラグイン不採用の理由 (旧 `generate-index` ステップは dataClient inline 化に伴い撤廃)
+- `Documents/ADR-003-build-pipeline-chaining.md` — `validate-lessons → lint-fix → vite build` を npm `&&` で直列化する決定と、`prebuild` フック / Vite プラグイン不採用の理由 (旧 `generate-index` ステップは validate-lessons として再構成)
 - `Documents/ADR-004-dependency-update-workflow.md` — `npm outdated` を起点とした依存パッケージ定期更新フローと、`.nvmrc` / `engines.node` / Actions Node ランタイムの同期義務
 - `Documents/ADR-005-localstorage-optional-persistence.md` — `localStorage` / `sessionStorage` 等のブラウザ永続化を best-effort なオプショナル動作として扱う方針と try/catch 義務

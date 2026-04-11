@@ -53,10 +53,11 @@
 | `レッスン.json` | × | 全角文字は不可 |
 | `lesson.v2.json` | × | ドット (拡張子以外) は不可 |
 
-この制約は次の 2 箇所で運用上の前提となっています。
+この制約は次の 3 箇所で運用上の前提となっています。
 
 - `src/router/index.js` のルート定義 (`/:filename([A-Za-z0-9_-]+)`) が、URL パスからこのパターンに一致しない文字列を受け付けない。合致しない URL は catch-all ルートでトップページへリダイレクトされる。これにより `%2F` などのデコード結果や予期しない文字列が `fetchLesson()` に到達する経路を遮断する。
-- `src/lib/dataClient.js` がアプリ起動時に `data/*.json` のファイル名を検査し、不一致があれば fail-loud で throw する。これにより不正なファイル名を含む状態で commit されてもアプリの初回起動 (dev / 本番ともに) で即座に検出される。
+- `scripts/validate-lessons.mjs` (`npm run build` の最初のステップ) が `data/` 配下の教材ファイル名・JSON 構造 (`title` / `description` / `lines` の型) を fail-loud 検証する。違反があれば即座に非ゼロ終了して `lint-fix` / `vite build` に進まない。これにより不正な教材ファイルを含む commit は CI / ローカル build の段階で必ず検出される。
+- `src/lib/dataClient.js` がアプリ起動時にも同じ regex 検証を行い、validate-lessons を経由しない `vite dev` 直接起動や、何らかの経路でバンドルが browser にロードされた場合の defense in depth として動作する。
 
 ## 教材で使える HTML 要素
 
