@@ -1,4 +1,4 @@
-import { ref, watch } from 'vue'
+import { readonly, ref } from 'vue'
 
 // Reader 本文 (.reader-line) のフォントサイズ倍率を保持する。
 //
@@ -12,6 +12,11 @@ import { ref, watch } from 'vue'
 //   ref はモジュールスコープの singleton として 1 つだけ保持する。
 //   composable 関数を呼ぶたびに新しい ref を作る素朴な形にすると、HomePage で
 //   いじっても ReaderPage には届かない。
+// - 書き換えは setFontScale() / 永続化は persistFontScale() の 2 つの明示 API
+//   に分離し、watch を排除している。スライダードラッグ中は setFontScale だけが
+//   高頻度で呼ばれて DOM 反映だけ走り、操作終了時に persistFontScale を 1 度
+//   呼ぶ運用。これにより同期 setItem がドラッグ中のメインスレッドをブロック
+//   しない。watch を避けた背景は CLAUDE.md の「watch を避ける」セクション参照。
 
 const STORAGE_KEY = 'italyshadowing.fontScale'
 
@@ -59,35 +64,44 @@ function applyToDom(value) {
 
 const fontScale = ref(loadInitial())
 
-// 起動直後の適用。main.js でこのモジュールを import した時点で実行される。
+// 起動直後の DOM 反映。main.js でこのモジュールを import した時点で実行される。
 applyToDom(fontScale.value)
 
-watch(fontScale, (value) => {
-  // 全ての書き込み (slider v-model / HomePage の ←/→ ハンドラ / 外部からの
-  // 直接代入) を 1 ヶ所で正規化するチョークポイント。clamp と量子化の両方を
-  // ここで吸収するため、書き込み側は生の値を投げてよい。
+// 値を更新する公式 API。clamp + 量子化 + ref 更新 + CSS 変数反映を 1 ヶ所に
+// 集約する。**永続化はしない** — 高頻度で呼ばれる可能性があるため
+// localStorage への書き込みは別 API persistFontScale() に分離した。
+//
+// 同値書き込みは早期 return して reactivity 連鎖を抑える。
+function setFontScale(value) {
   const normalized = quantizeScale(clampScale(value))
-  if (normalized !== value) {
-    // clamp / 量子化で値が変わった場合は再代入してこの呼び出しは終了する。
-    // 直後に同じ watch が normalized 値で再走し、その回で DOM 反映と
-    // 永続化が行われる (= 二段階で確定する)。
-    fontScale.value = normalized
-    return
-  }
+  if (normalized === fontScale.value) return
+  fontScale.value = normalized
   applyToDom(normalized)
+}
+
+// 現在の fontScale を localStorage に保存する。スライダードラッグ中のような
+// 高頻度更新では呼ばずに、操作終了時 (slider の @end / キー入力完了) に
+// まとめて呼ぶこと。同期 setItem がメインスレッドをブロックして体感の
+// 引っかかりを起こすため、ドラッグごとに毎フレーム呼ぶことは避ける。
+//
+// 失敗時の握りつぶしは ADR-005 (localStorage はオプショナル動作) に基づく。
+function persistFontScale() {
   if (typeof window === 'undefined') return
-  // localStorage.setItem は QuotaExceededError や private browsing 環境などで
-  // throw する可能性がある。永続化失敗はその場限りの設定として許容し、UI が
-  // 落ちないように握りつぶす (in-memory の fontScale はそのままセッション中
-  // 有効なので、表示は正しく更新され続ける)。詳細は ADR-005 参照。
   try {
-    window.localStorage.setItem(STORAGE_KEY, String(normalized))
+    window.localStorage.setItem(STORAGE_KEY, String(fontScale.value))
   }
   catch {
-    // ignore — 次回起動時にデフォルト値に戻る挙動で許容
+    // ignore — ADR-005 参照
   }
-})
+}
 
 export function useFontScale() {
-  return { fontScale }
+  // fontScale は readonly で公開し、書き換えは setFontScale 経由のみに強制する。
+  // テンプレートで `:model-value="fontScale"` は問題なく動く (read のみ)。
+  // `v-model="fontScale"` のような直接代入は意図的に弾く設計。
+  return {
+    fontScale: readonly(fontScale),
+    setFontScale,
+    persistFontScale,
+  }
 }

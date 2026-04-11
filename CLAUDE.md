@@ -74,6 +74,48 @@ function selectAndOpen(index) {
 
 CSS クラスは見た目や意味のために付けるものです。条件ロジックを `<script setup>` へ出す目的だけで空の `class` を増やす必要はありません。`v-if="showHint"` だけで十分で、`class="conditional-show"` のような実装由来のクラス名は不要です。
 
+## `watch` / `watchEffect` は最終手段。明示的な setter / イベントハンドラを優先する
+
+`watch` (および `watchEffect`) は依存元の値が変わった瞬間に**離れたコードが暗黙に動く**仕組みのため、後から読む側は「この ref を書き換えたら何が連鎖して起きるのか」を grep だけで追えなくなります。次のような事故が起きやすいです。
+
+- 副作用 (DOM 反映 / 永続化 / 同期 API 呼び出し / ネットワーク) が watch コールバックに集約されると、書き換え側は副作用の存在を意識せずに高頻度で値を更新し、想定外の負荷が発生する (例: スライダードラッグ中の同期 `localStorage.setItem` がメインスレッドをブロックし体感の引っかかりが出る)
+- 依存関係が増えると watch 同士の連鎖が多段になり、デバッグ時のスタックトレースが暗黙の reactivity を経由して断片化する
+- リファクタ時に「この ref を消したら何が壊れるか」が型や参照だけでは追えない
+
+### 推奨する書き方
+
+書き換えと副作用を**明示的な setter 関数**にまとめ、呼び出し側が副作用の存在を意識してから呼ぶ形にしてください。さらに副作用は粒度ごとに分離し、高頻度に呼びたい処理 (DOM 反映) と稀にだけ呼びたい処理 (永続化・ネットワーク) を別 API にします。
+
+```js
+// 避ける: 暗黙の連鎖。書き手が「ref を変えただけ」と思っていても
+// localStorage.setItem まで毎回走る。
+const value = ref(initial)
+watch(value, (v) => {
+  applyToDom(v)
+  localStorage.setItem(KEY, v) // ドラッグ中に同期 I/O が連発する
+})
+
+// 推奨: 明示的 API に分離
+function setValue(v) {
+  value.value = clamp(v)
+  applyToDom(value.value) // 高頻度 OK
+}
+function persistValue() {
+  try { localStorage.setItem(KEY, String(value.value)) } catch {}
+}
+```
+
+呼び出し側 (例: スライダー) は `@update:model-value="setValue"` で即時反映し、`@end="persistValue"` で操作終了時にだけ永続化する、というように副作用の発火タイミングを明示できます。本リポジトリの参照実装は `src/composables/useFontScale.js` (`setFontScale` / `persistFontScale` の分離) と `src/pages/HomePage.vue` の slider ハンドラ (`onFontScaleSliderUpdate` / `onFontScaleSliderEnd`) です。
+
+`v-model` も「書き換え + 副作用の暗黙連鎖」を生みやすいので、副作用を伴う ref には `:model-value` + `@update:model-value` の二項分解を使い、ref 自体は composable から `readonly()` で公開して直接代入を弾いてください。
+
+### `watch` を使ってよいケース
+
+- 外部の reactive ソース (`route.query` の変化、`useResizeObserver` の出力など) を **自分が制御できない理由で watch する以外に追従手段が無い** 場合
+- 複数の独立した ref / props の組み合わせをまとめて扱う必要があり、setter を複数箇所に重複させるとかえって読みにくくなる場合
+
+このような正当な watch を書く場合は、コメントで「**なぜ setter ではなく watch か**」を明記してください。レビュー時にこのコメントの有無を確認します。
+
 ## `KeyboardEvent.key` は文字列リテラル直書きしない
 
 `event.key === ' '` や `event.key === 'ArrowUp'` のような直書きは避け、プロジェクト内の定数モジュールから import して参照してください。全角スペース・NBSP 等の不可視文字混入は lint で拾えず、grep 性も悪くなります。本リポジトリでは `src/lib/keys.js` が該当モジュールです (詳細: `Documents/ADR-002-keyboard-key-local-constants.md`)。

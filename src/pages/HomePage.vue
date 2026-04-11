@@ -43,10 +43,34 @@ const hasLessons = computed(() => lessons.value.length > 0)
 const isEmptyState = computed(() => !isLoading.value && !error.value && !hasLessons.value)
 const showHint = computed(() => !error.value && !isLoading.value && hasLessons.value)
 
-const { fontScale } = useFontScale()
+const { fontScale, setFontScale, persistFontScale } = useFontScale()
 // スライダーの thumb-label に出すパーセント表記。テンプレート側に算術を
 // 書かないため computed に寄せる。
 const fontScalePercent = computed(() => `${Math.round(fontScale.value * 100)}%`)
+
+// スライダードラッグ中フラグ。ドラッグ中は localStorage への永続化を抑制し、
+// @end イベントでまとめて 1 回だけ persistFontScale() を呼ぶ。
+// これにより同期 setItem がドラッグ中のメインスレッドをブロックして体感の
+// 引っかかりを起こすのを防ぐ。
+const isDraggingFontScale = ref(false)
+
+function onFontScaleSliderUpdate(value) {
+  setFontScale(value)
+  // キーボードでの slider 操作 (フォーカス時の ←/→) は @start/@end を伴わない
+  // ため isDraggingFontScale が false のまま @update:model-value だけが届く。
+  // この場合は 1 操作 = 1 keystroke なのでその場で永続化してよい。
+  // ドラッグ中 (= isDraggingFontScale=true) はここでは保存せず @end に委ねる。
+  if (!isDraggingFontScale.value) persistFontScale()
+}
+
+function onFontScaleSliderStart() {
+  isDraggingFontScale.value = true
+}
+
+function onFontScaleSliderEnd() {
+  isDraggingFontScale.value = false
+  persistFontScale()
+}
 
 function openSelected() {
   const lesson = lessons.value[selectedIndex.value]
@@ -63,11 +87,11 @@ function selectAndOpen(index) {
 // useKeyboard 側が text-entry 要素に対する keydown ハンドラ実行を skip するため
 // Vuetify ネイティブのスライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
 //
-// 値の clamp と STEP 格子への量子化は useFontScale.js の watch チョークポイント
-// で集約処理するため、ここでは加算結果をそのまま代入してよい (slider v-model も
-// 同じチョークポイントを通る)。
+// 値の clamp / 量子化は useFontScale.js の setFontScale が集約処理する。
+// 1 keystroke = 1 完結操作なので、その場で永続化までまとめて行う。
 function adjustFontScale(delta) {
-  fontScale.value = fontScale.value + delta
+  setFontScale(fontScale.value + delta)
+  persistFontScale()
 }
 
 useKeyboard((event) => {
@@ -147,20 +171,37 @@ useKeyboard((event) => {
       >
         ↑ ↓ で選択 / Enter で開く
       </p>
-      <section class="font-size-section">
-        <h2 class="font-size-heading">
+      <section
+        class="font-size-section"
+        aria-labelledby="font-size-section-heading"
+      >
+        <h2
+          id="font-size-section-heading"
+          class="font-size-heading"
+        >
           表示フォントサイズ
         </h2>
         <div class="font-size-preview-box">
           <span class="font-size-preview">Lorem Ipsum</span>
         </div>
+        <!--
+          aria-labelledby で h2 見出しと slider を紐付ける。これにより
+          スクリーンリーダーで slider にフォーカスした際「表示フォントサイズ
+          スライダー 現在値 …」のように読み上げられ、何を調整するスライダー
+          か分かるようになる。Vuetify v-slider は内部 input role="slider"
+          要素に aria-* 属性を pass-through する。
+        -->
         <v-slider
-          v-model="fontScale"
+          :model-value="fontScale"
           :min="FONT_SCALE_MIN"
           :max="FONT_SCALE_MAX"
           :step="FONT_SCALE_STEP"
+          aria-labelledby="font-size-section-heading"
           thumb-label
           hide-details
+          @update:model-value="onFontScaleSliderUpdate"
+          @start="onFontScaleSliderStart"
+          @end="onFontScaleSliderEnd"
         >
           <template #thumb-label>
             {{ fontScalePercent }}
