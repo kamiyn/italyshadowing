@@ -135,11 +135,11 @@ URL をそのまま画面状態として利用する。
 ```mermaid
 flowchart TD
     appStart[AppStart] --> routeCheck{IsTopRoute}
-    routeCheck -->|yes| loadIndex[LoadIndexJson]
-    loadIndex --> showList[RenderHomePage]
+    routeCheck -->|yes| fetchIndex["fetchIndex()<br/>(from dataClient / inlined lessons)"]
+    fetchIndex --> showList[RenderHomePage]
     routeCheck -->|no| parseRoute[ParseFilenameAndPage]
-    parseRoute --> loadLesson[LoadLessonJson]
-    loadLesson --> normalizePage[NormalizePageRange]
+    parseRoute --> fetchLesson["fetchLesson(filename)<br/>(from dataClient / inlined lessons)"]
+    fetchLesson --> normalizePage[NormalizePageRange]
     normalizePage --> pickLine[PickLineFromLines]
     pickLine --> renderLesson[RenderReaderPage]
 ```
