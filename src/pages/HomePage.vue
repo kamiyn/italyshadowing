@@ -62,12 +62,12 @@ function selectAndOpen(index) {
 // フォントサイズ調整 (←/→)。スライダーがフォーカスされている場合は
 // useKeyboard 側が text-entry 要素に対する keydown ハンドラ実行を skip するため
 // Vuetify ネイティブのスライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
+//
+// 値の clamp と STEP 格子への量子化は useFontScale.js の watch チョークポイント
+// で集約処理するため、ここでは加算結果をそのまま代入してよい (slider v-model も
+// 同じチョークポイントを通る)。
 function adjustFontScale(delta) {
-  const next = fontScale.value + delta
-  const clamped = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, next))
-  // 浮動小数誤差で 0.05 刻みが 0.05000000000000001 のような値にならないよう
-  // ステップ単位で丸める。STEP=0.05 なら小数 2 桁。
-  fontScale.value = Math.round(clamped / FONT_SCALE_STEP) * FONT_SCALE_STEP
+  fontScale.value = fontScale.value + delta
 }
 
 useKeyboard((event) => {

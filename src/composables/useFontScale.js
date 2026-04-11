@@ -20,9 +20,24 @@ export const FONT_SCALE_MAX = 2.0
 export const FONT_SCALE_STEP = 0.05
 export const FONT_SCALE_DEFAULT = 1.0
 
+// FONT_SCALE_STEP (=0.05) を整数の刻み数に変換した値。1 / 0.05 = 20。
+// quantizeScale はこれを使って value を STEP の格子点へ量子化する。
+// STEP を 0.025 などに変えると 40 などになる。
+const STEPS_PER_UNIT = Math.round(1 / FONT_SCALE_STEP)
+
 function clampScale(value) {
   if (!Number.isFinite(value)) return FONT_SCALE_DEFAULT
   return Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, value))
+}
+
+// 浮動小数誤差で 1.15 が 1.1500000000000001 のように汚れるのを防ぐため、
+// 整数刻みで丸めてから割り戻す。`Math.round(v * 20) / 20` の形は除算の
+// 分母 20 が IEEE 754 で厳密表現できる整数なので、結果が 1.15 の最近傍
+// double に収束する。`Math.round(v / 0.05) * 0.05` だと最終ステップの
+// `* 0.05` で誤差が再混入し、String(value) や CSS 変数 / localStorage の
+// 文字列化が "1.1500000000000001" のように汚れる。
+function quantizeScale(value) {
+  return Math.round(value * STEPS_PER_UNIT) / STEPS_PER_UNIT
 }
 
 function loadInitial() {
@@ -30,7 +45,7 @@ function loadInitial() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw == null) return FONT_SCALE_DEFAULT
-    return clampScale(Number.parseFloat(raw))
+    return quantizeScale(clampScale(Number.parseFloat(raw)))
   }
   catch {
     return FONT_SCALE_DEFAULT
@@ -48,21 +63,25 @@ const fontScale = ref(loadInitial())
 applyToDom(fontScale.value)
 
 watch(fontScale, (value) => {
-  // スライダーは min/max を設定済みだが、外部から不正な値が入る可能性に備えて
-  // 念のため clamp してから永続化する。
-  const clamped = clampScale(value)
-  if (clamped !== value) {
-    fontScale.value = clamped
+  // 全ての書き込み (slider v-model / HomePage の ←/→ ハンドラ / 外部からの
+  // 直接代入) を 1 ヶ所で正規化するチョークポイント。clamp と量子化の両方を
+  // ここで吸収するため、書き込み側は生の値を投げてよい。
+  const normalized = quantizeScale(clampScale(value))
+  if (normalized !== value) {
+    // clamp / 量子化で値が変わった場合は再代入してこの呼び出しは終了する。
+    // 直後に同じ watch が normalized 値で再走し、その回で DOM 反映と
+    // 永続化が行われる (= 二段階で確定する)。
+    fontScale.value = normalized
     return
   }
-  applyToDom(clamped)
+  applyToDom(normalized)
   if (typeof window === 'undefined') return
   // localStorage.setItem は QuotaExceededError や private browsing 環境などで
   // throw する可能性がある。永続化失敗はその場限りの設定として許容し、UI が
   // 落ちないように握りつぶす (in-memory の fontScale はそのままセッション中
-  // 有効なので、表示は正しく更新され続ける)。
+  // 有効なので、表示は正しく更新され続ける)。詳細は ADR-005 参照。
   try {
-    window.localStorage.setItem(STORAGE_KEY, String(clamped))
+    window.localStorage.setItem(STORAGE_KEY, String(normalized))
   }
   catch {
     // ignore — 次回起動時にデフォルト値に戻る挙動で許容
