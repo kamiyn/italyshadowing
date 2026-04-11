@@ -51,6 +51,7 @@ flowchart TD
 - `lines` 配列の該当要素を HTML として表示する
 - 学習時の視界を保つため、`title` と `description` は表示しない
 - `ArrowLeft` / `ArrowRight` で前後ページへ移動する
+- `Space` でも次ページへ移動する
 - `ArrowUp` でトップページへ戻る
 
 トップページと教材ページは、Vue 的には別コンポーネントとして分離する。
@@ -146,9 +147,10 @@ flowchart TD
     homeKey -->|ArrowUp| selectPrev[SelectPreviousItem]
     homeKey -->|ArrowDown| selectNext[SelectNextItem]
     homeKey -->|Enter| openLesson[NavigateToLessonFirstPage]
-    pageType -->|reader| readerKey{ArrowLeftRightOrUp}
+    pageType -->|reader| readerKey{ArrowLeftRightSpaceOrUp}
     readerKey -->|ArrowLeft| goPrev[NavigateToPreviousPage]
     readerKey -->|ArrowRight| goNext[NavigateToNextPage]
+    readerKey -->|Space| goNext
     readerKey -->|ArrowUp| goHome[NavigateToHome]
 ```
 
