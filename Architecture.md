@@ -52,7 +52,7 @@ flowchart TD
 - 学習時の視界を保つため、`title` と `description` は表示しない
 - `ArrowLeft` / `ArrowRight` で前後ページへ移動する
 - `Space` でも次ページへ移動する
-- `ArrowUp` でトップページへ戻る
+- `ArrowUp` または `Escape` でトップページへ戻る
 
 トップページと教材ページは、Vue 的には別コンポーネントとして分離する。
 
@@ -147,11 +147,12 @@ flowchart TD
     homeKey -->|ArrowUp| selectPrev[SelectPreviousItem]
     homeKey -->|ArrowDown| selectNext[SelectNextItem]
     homeKey -->|Enter| openLesson[NavigateToLessonFirstPage]
-    pageType -->|reader| readerKey{ArrowLeftRightSpaceOrUp}
+    pageType -->|reader| readerKey{ArrowLeftRightSpaceUpOrEscape}
     readerKey -->|ArrowLeft| goPrev[NavigateToPreviousPage]
     readerKey -->|ArrowRight| goNext[NavigateToNextPage]
     readerKey -->|Space| goNext
     readerKey -->|ArrowUp| goHome[NavigateToHome]
+    readerKey -->|Escape| goHome
 ```
 
 ### ビルド時の教材一覧更新
