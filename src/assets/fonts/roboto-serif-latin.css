@@ -1,0 +1,44 @@
+/*
+ * Roboto Serif Variable — latin subset のみを取り込むためのカスタム CSS。
+ *
+ * なぜ @fontsource-variable/roboto-serif/standard.css をそのまま使わないか
+ * --------------------------------------------------------------
+ * パッケージ標準の standard.css は cyrillic / cyrillic-ext / vietnamese /
+ * latin-ext / latin の 5 subset すべての @font-face を宣言している。
+ * 各 @font-face は unicode-range で振り分けられているのでブラウザは未使用
+ * subset の woff2 をダウンロードしないが、Vite はビルド時に CSS の url() を
+ * 走査して **参照されている woff2 を全て dist/ にコピーする**。
+ * その結果 dist/assets/ に約 1 MB 分の使われない非 latin フォントが残る。
+ *
+ * 本アプリの目的はイタリア語のシャドーイングであり、表示文字は基本ラテン +
+ * Latin-1 Supplement (à è é ì í ò ó ù ú など U+00E0-U+00FA) のみで足りる。
+ * cyrillic / latin-ext / vietnamese は不要。
+ *
+ * したがってここでは standard.css の **latin ブロックだけを cherry-pick** し、
+ * 他 subset の @font-face を取り込まない。これにより dist/ にコピーされる
+ * woff2 ファイルが latin 1 個 (≈ 380 KB) のみになる。
+ *
+ * woff2 ファイルへの参照は bare specifier で書いており、Vite が
+ * @fontsource-variable パッケージの exports 経由で解決し dist/assets/ に
+ * ハッシュ付きでコピーする。これによりパッケージ更新時もパス追従が利く。
+ *
+ * unicode-range / 各種フィールドはパッケージ標準 standard.css の latin
+ * ブロックと完全一致させてある。パッケージ更新時に変動が無いか注意。
+ *
+ * 「standard」軸変種について
+ * --------------------------------------------------------------
+ * woff2 ファイル名末尾の "standard" は @fontsource の axis variant 名で、
+ * wght + wdth + opsz の variable 軸を含む。これにより本アプリの
+ * font-weight 500/700 と font-optical-sizing: auto の両方が動作する
+ * (詳細は Documents/reader-typography.md および src/main.js のコメント参照)。
+ */
+
+@font-face {
+  font-family: 'Roboto Serif Variable';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  font-stretch: 50% 150%;
+  src: url('@fontsource-variable/roboto-serif/files/roboto-serif-latin-standard-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
