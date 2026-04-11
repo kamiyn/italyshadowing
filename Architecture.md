@@ -35,6 +35,7 @@ flowchart TD
 トップページの責務は教材一覧の表示と選択である。
 
 - `data/index.json` を読み込み、教材一覧を表示する
+- 各教材の `title` と `description` を一覧上の表示に利用する
 - 現在選択中の教材を内部状態として保持する
 - `ArrowUp` / `ArrowDown` で選択を移動する
 - `Enter` で選択中教材の先頭ページへ遷移する
@@ -46,7 +47,8 @@ flowchart TD
 - ルートパラメータから `filename` を取得する
 - クエリから `page` を取得し、現在ページ番号として解釈する
 - 対応する JSON ファイルを読み込む
-- 配列の該当要素を HTML として表示する
+- `lines` 配列の該当要素を HTML として表示する
+- 学習時の視界を保つため、`title` と `description` は表示しない
 - `ArrowLeft` / `ArrowRight` で前後ページへ移動する
 - `ArrowUp` でトップページへ戻る
 
@@ -57,17 +59,24 @@ flowchart TD
 ### 教材ファイル
 
 - 保存場所: `data/<filename>.json`
-- 形式: 文字列配列
-- 意味: 各配列要素が 1 ページ分の表示内容
+- 形式: メタ情報と本文行を持つ JSON オブジェクト
+- 意味:
+  - `title`: トップページで表示する教材名
+  - `description`: トップページで表示する教材説明
+  - `lines`: 各配列要素が 1 ページ分の表示内容
 
 例:
 
 ```json
-[
-  "Prima riga",
-  "<b>Seconda riga</b>",
-  "Terza riga"
-]
+{
+  "title": "Skit 2026 Spring",
+  "description": "sample",
+  "lines": [
+    "Prima riga",
+    "<b>Seconda riga</b>",
+    "Terza riga"
+  ]
+}
 ```
 
 ### 一覧ファイル
@@ -76,7 +85,7 @@ flowchart TD
 - 役割: トップページで表示する教材一覧の正本
 - 更新方式: ビルド前またはビルド時に `data/` を走査して再生成する
 
-`data/index.json` には最低限、教材ファイル名の一覧が必要である。拡張性を考えると、将来的には表示名や並び順を含められる構造にしてもよいが、初期実装ではファイル名一覧のみで十分である。
+`data/index.json` には最低限、教材ファイル名の一覧が必要である。トップページで `title` / `description` を使うため、実装では一覧ファイルに表示用メタ情報を持たせるか、各教材ファイルを読んで集約するかを選べる。初期方針としては、ビルド時に `data/index.json` へ表示用メタ情報も含める構成が扱いやすい。
 
 ## ルーティングと状態管理
 
@@ -94,7 +103,7 @@ URL をそのまま画面状態として利用する。
 - `filename`
   - 表示対象教材を識別する
 - `page`
-  - 配列インデックスに対応する表示位置
+  - `lines` 配列インデックスに対応する表示位置
   - 未指定時は 0 扱い
   - 負数、非数値、範囲外は有効範囲へ補正する
 
@@ -102,13 +111,14 @@ URL をそのまま画面状態として利用する。
 
 ## 表示責務
 
-教材データの各文字列は HTML として描画する。`<b>` などの軽い装飾を前提にしているため、プレーンテキストではなく HTML 出力が必要になる。
+教材データの `lines` に含まれる各文字列は HTML として描画する。`<b>` などの軽い装飾を前提にしているため、プレーンテキストではなく HTML 出力が必要になる。
 
 そのため、設計上は次の前提を置く。
 
 - 入力データはユーザー投稿ではなく、リポジトリ管理下の信頼済み教材とする
 - HTML の許容範囲は教材記述に必要な最小限を想定する
 - 表示用スタイルは各 `.vue` 内で定義する
+- ReaderPage では学習に不要なメタ情報を表示しない
 
 ## 処理フロー
 
@@ -122,7 +132,8 @@ flowchart TD
     routeCheck -->|no| parseRoute[ParseFilenameAndPage]
     parseRoute --> loadLesson[LoadLessonJson]
     loadLesson --> normalizePage[NormalizePageRange]
-    normalizePage --> renderLesson[RenderReaderPage]
+    normalizePage --> pickLine[PickLineFromLines]
+    pickLine --> renderLesson[RenderReaderPage]
 ```
 
 ### キー入力から画面遷移まで
@@ -170,12 +181,14 @@ flowchart TD
 
 - `HomePage`
   - 教材一覧取得
+  - `title` / `description` 表示
   - 選択状態管理
   - 一覧上のキー操作
 - `ReaderPage`
   - 教材取得
   - ページ番号補正
-  - HTML 描画
+  - `lines` の HTML 描画
+  - メタ情報の非表示制御
   - 読書中のキー操作
 - ルーター
   - `filename` と `page` の解釈
@@ -192,3 +205,4 @@ flowchart TD
 - キー操作がフォーム要素と競合しないようにする
 - HTML 描画は信頼済みデータを前提にしつつ、データ投入経路を限定する
 - トップページの選択状態を視覚的に分かりやすくする
+- 一覧用メタ情報と本文表示責務を混在させない
