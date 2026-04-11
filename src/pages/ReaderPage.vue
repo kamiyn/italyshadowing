@@ -116,6 +116,25 @@ function goToPage(next) {
   })
 }
 
+// 「次へ」操作の共通エントリ。最終ページから更に次へ進もうとした場合は
+// HomePage に戻す。キー操作 (Space / →) と画面タップの両方から呼ばれる。
+function advanceOrExit() {
+  if (lines.value.length === 0) return
+  if (effectivePage.value >= lines.value.length - 1) {
+    router.push('/')
+    return
+  }
+  goToPage(effectivePage.value + 1)
+}
+
+// 本文以外の余白 (.reader-shell の地の部分) をタップ/クリックしたときだけ
+// 次へ進める。本文 .reader-line やページ番号 .reader-progress、エラー表示
+// などを誤タップしても発火しないよう currentTarget と一致するときに限定する。
+function handleShellClick(event) {
+  if (event.target !== event.currentTarget) return
+  advanceOrExit()
+}
+
 useKeyboard((event) => {
   switch (event.key) {
     case KEY_ARROW_LEFT:
@@ -123,13 +142,11 @@ useKeyboard((event) => {
       goToPage(effectivePage.value - 1)
       break
     case KEY_ARROW_RIGHT:
-      event.preventDefault()
-      goToPage(effectivePage.value + 1)
-      break
     case KEY_SPACE:
-      // Space also advances. Prevent the default page scroll.
+      // Right Arrow and Space both advance. Prevent default behavior
+      // (including Space page scroll) in this shared handler.
       event.preventDefault()
-      goToPage(effectivePage.value + 1)
+      advanceOrExit()
       break
     case KEY_ARROW_UP:
     case KEY_ESCAPE:
@@ -142,7 +159,10 @@ useKeyboard((event) => {
 
 <template>
   <v-main>
-    <div class="reader-shell">
+    <div
+      class="reader-shell"
+      @click="handleShellClick"
+    >
       <p
         v-if="error"
         class="reader-error"
