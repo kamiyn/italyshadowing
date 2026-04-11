@@ -32,7 +32,7 @@
 - シャドーイング中の画面では `title` / `description` を表示しません
 - `lines` の文字列は HTML として出力されます
 - HTML 描画を行うため、教材データはリポジトリ管理下の信頼済みデータに限定し、不特定の外部入力は受けません
-- 教材ファイルの一覧は `data/index.json` で管理します
+- `data/*.json` は Vite の `import.meta.glob` でビルド時に JS バンドルへ取り込まれます。教材ファイルを追加・編集・削除した後は `npm run build` を再実行するだけで反映されます (一覧用の `index.json` は不要です)
 
 ### 教材ファイル名の制約
 
@@ -53,11 +53,11 @@
 | `レッスン.json` | × | 全角文字は不可 |
 | `lesson.v2.json` | × | ドット (拡張子以外) は不可 |
 
-この制約は次の 2 箇所で運用上の前提となっています。
+この制約は次の 3 箇所で運用上の前提となっています。
 
-- `src/router/index.js` のルート定義 (`/:filename([A-Za-z0-9_-]+)`) が、URL パスからこのパターンに一致しない文字列を受け付けない
-- 上記に合致しない URL は catch-all ルートでトップページへリダイレクトされる
-- これにより `%2F` などのデコード結果や予期しない文字列が `fetchLesson()` に到達して URL を組み立てる経路を遮断する
+- `src/router/index.js` のルート定義 (`/:filename([A-Za-z0-9_-]+)`) が、URL パスからこのパターンに一致しない文字列を受け付けない。合致しない URL は catch-all ルートでトップページへリダイレクトされる。これにより `%2F` などのデコード結果や予期しない文字列が `fetchLesson()` に到達する経路を遮断する。
+- `scripts/validate-lessons.mjs` (`npm run build` の最初のステップ) が `data/` 配下の教材ファイル名・JSON 構造 (`title` / `description` / `lines` の型) を fail-loud 検証する。違反があれば即座に非ゼロ終了して `lint-fix` / `vite build` に進まない。これにより不正な教材ファイルを含む commit は CI / ローカル build の段階で必ず検出される。
+- `src/lib/dataClient.js` がアプリ起動時にも同じ regex 検証を行い、validate-lessons を経由しない `vite dev` 直接起動や、何らかの経路でバンドルが browser にロードされた場合の defense in depth として動作する。
 
 ## 教材で使える HTML 要素
 

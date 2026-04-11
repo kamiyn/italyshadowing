@@ -8,8 +8,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "generate-index": "node scripts/generate-index.mjs",
-    "build": "npm run generate-index && npm run lint-fix && vite build",
+    "validate-lessons": "node scripts/validate-lessons.mjs",
+    "build": "npm run validate-lessons && npm run lint-fix && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint-fix": "eslint . --fix"
