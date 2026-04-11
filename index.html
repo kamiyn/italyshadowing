@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Italy Shadowing</title>
+    <!--
+      SPA single page apps for GitHub Pages — adapted from
+      https://github.com/rafgraph/spa-github-pages (MIT).
+      Decodes the path that 404.html stashed into the query string,
+      so that deep links like /italyshadowing/skit2026spring?page=3 work
+      after a hard reload on GitHub Pages.
+    -->
+    <script>
+      (function (l) {
+        if (l.search[1] === '/') {
+          var decoded = l.search
+            .slice(1)
+            .split('&')
+            .map(function (s) { return s.replace(/~and~/g, '&') })
+            .join('?')
+          window.history.replaceState(
+            null,
+            null,
+            l.pathname.slice(0, -1) + decoded + l.hash,
+          )
+        }
+      }(window.location))
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
