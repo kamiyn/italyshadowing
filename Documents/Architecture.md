@@ -165,9 +165,12 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    buildStart[BuildStart] --> runLintFix[RunLintFix]
+    buildStart[BuildStart] --> validateLessons[ValidateLessons]
+    validateLessons --> validateOk{ValidationSucceeded}
+    validateOk -->|no| stopBuild[StopBuild]
+    validateOk -->|yes| runLintFix[RunLintFix]
     runLintFix --> lintFixOk{LintFixSucceeded}
-    lintFixOk -->|no| stopBuild[StopBuild]
+    lintFixOk -->|no| stopBuild
     lintFixOk -->|yes| runViteBuild[RunViteRolldownBuild]
     runViteBuild --> globData["import.meta.glob<br/>(data/*.json)"]
     globData --> bundleJs[BundleJsWithInlinedLessons]
@@ -183,6 +186,8 @@ flowchart TD
 - `lint-fix` は ESLint による自動修正とフォーマットを行う
 - ESLint ルールセットは Nuxt 4 標準をベースにする
 - Vite Rolldown でアプリをビルドする
+- ビルドプロセスの最初に `validate-lessons` を実行し、教材 JSON のファイル名と構造を fail-loud 検証する
+- `validate-lessons` で違反が見つかった場合は、その時点でビルド全体を停止する
 - ビルドプロセス内で `lint-fix` を実行し、整形済み状態で成果物を生成する
 - `lint-fix` 実行後もエラーが残る場合は、Vite ビルドへ進まずに処理を失敗終了とする
 - 教材 JSON は `src/lib/dataClient.js` の `import.meta.glob` を経由して JS バンドルへ inline される (`dist/data/` は生成されない)
@@ -211,6 +216,8 @@ flowchart TD
   - `filename` と `page` の解釈
   - URL 更新による状態遷移
 - ビルドパイプライン (`package.json` の `scripts.build`)
+  - `validate-lessons` 実行
+  - `validate-lessons` 失敗時のビルド停止
   - `lint-fix` 実行
   - `lint-fix` 失敗時のビルド停止
   - Vite ビルド起動 (`import.meta.glob` で `data/*.json` を JS バンドルへ inline)
