@@ -15,6 +15,7 @@
     "lint-fix": "eslint . --fix"
   },
   "dependencies": {
+    "@fontsource-variable/roboto-serif": "^5.2.8",
     "vue": "^3.5.32",
     "vue-router": "^5.0.4",
     "vuetify": "^4.0.5"

@@ -186,6 +186,8 @@ useKeyboard((event) => {
   /* 上下は 2rem、左右は画面幅の 10% を余白として確保する */
   padding: 2rem 10%;
   text-align: center;
+  /* .reader-progress を画面上端に絶対配置するための基準 */
+  position: relative;
 }
 
 .reader-line {
@@ -199,20 +201,51 @@ useKeyboard((event) => {
   font-size: clamp(3rem, 8vw, 5.5rem);
   line-height: 1.5;
   width: 100%;
+  /*
+   * フォント / 配色設計の根拠と調整指針は
+   * Documents/reader-typography.md を参照。
+   * 色値はハードコードせず Vuetify テーマ変数 (src/plugins/vuetify.js) 経由。
+   */
+  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
+  font-weight: 500;
+  font-optical-sizing: auto;
+  color: rgb(var(--v-theme-readerBody));
 }
 
-/* 教材コンテンツ中の <b> 要素に対するスタイル */
+/* 教材コンテンツ中の <b> 要素に対するスタイル
+ * シャドーイングのアクセント母音強調用途。
+ *  - 色: アンバー (赤の否定感を避けつつ黒背景で見つけやすい)
+ *  - ウェイト: 700
+ * 詳細は Documents/reader-typography.md を参照。 */
 .reader-line :deep(b) {
   font-weight: 700;
+  color: rgb(var(--v-theme-readerAccent));
 }
 
-/* 教材コンテンツ中の <u> 要素に対するスタイル */
+/* 教材コンテンツ中の <u> 要素に対するスタイル
+ * 句のまとまりを示す補助記号。文字色は本文のまま、下線だけを強調する。
+ * 詳細は Documents/reader-typography.md を参照。 */
 .reader-line :deep(u) {
-  text-decoration: underline;
+  color: inherit;
+  text-decoration-line: underline;
+  text-decoration-color: rgba(var(--v-theme-readerUnderline), 0.9);
+  text-decoration-thickness: 0.1em;
+  text-underline-offset: 0.14em;
+  text-decoration-skip-ink: none;
 }
 
 .reader-progress {
-  margin-top: 2rem;
+  /*
+   * 本文 (.reader-line) から視覚的に最大限離すため画面上端へ絶対配置する。
+   * フレックスフロー外に出すことで、.reader-line は .reader-shell の
+   * 中央配置 (justify-content: center) を維持する。
+   * 文字サイズは従来通り 0.875rem を維持。
+   */
+  position: absolute;
+  top: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0;
   color: rgba(var(--v-theme-on-background), 0.6);
   font-size: 0.875rem;
 }
