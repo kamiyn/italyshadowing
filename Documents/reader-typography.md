@@ -12,11 +12,51 @@
   - `<u>` … 句のまとまりを示すグルーピング線
 - 長時間 (数十分〜) のシャドーイングセッションを想定するため、視覚疲労を最小化する
 
+## フォント供給方法
+
+Roboto Serif は `@fontsource-variable/roboto-serif` を `package.json` の依存に
+追加し、`src/main.js` で
+
+```js
+import '@fontsource-variable/roboto-serif/standard.css'
+```
+
+としてインポートする。Vite が `standard.css` 内の `@font-face` URL を解決し、
+`woff2` ファイルを `dist/assets/` にハッシュ付きでバンドルする。
+**Google Fonts CDN への外部読み込みは行わない** ため、CDN 障害時にもフォールバックなしでフォントが効く。
+
+CSS の `font-family` は `'Roboto Serif Variable'` で参照する (`Variable` サフィックスは fontsource の慣例)。
+ローカルにシステムインストールされた `Roboto Serif` を優先したい場合に備えて、
+`'Roboto Serif Variable', 'Roboto Serif', serif` のように 2 段フォールバックする。
+
+### 軸の選択 (`standard.css` を使う理由)
+
+`@fontsource-variable/roboto-serif` には軸セット別の CSS が用意されている:
+
+| ファイル | 含む軸 | latin subset 単体ファイルサイズ |
+|---|---|---|
+| `wght.css` | wght (weight) | 66 KB |
+| `opsz.css` | opsz (optical size) | 147 KB |
+| **`standard.css`** | **wght + wdth + opsz** | **379 KB** |
+| `full.css` | wght + wdth + opsz + grad | 574 KB |
+
+`.reader-line` では `font-weight: 500/700` (wght) と `font-optical-sizing: auto`
+(opsz) の両方を使うため、両軸を含む **`standard.css`** が必要。`wdth` は使っていないが
+標準セットに含まれるためそのまま受け入れる。
+
+ファイルサイズが問題になった場合は次の選択肢がある:
+
+1. **`wght.css` のみ (66 KB)**: `ReaderPage.vue` から `font-optical-sizing: auto`
+   を削除して切替。表示サイズ 48-88px で opsz の差は出るが、サイズ削減効果は
+   約 6 倍 (379 KB → 66 KB) と大きい
+2. **subset を絞る**: `unicode-range` を独自に書いて latin の中でも更に絞る
+   (現在は Italian 用なら latin 単体で十分。latin-ext 等は実際には fetch されない)
+
 ## 結論 (推奨初期値)
 
 | 要素 | プロパティ | 値 | 役割 |
 |---|---|---|---|
-| 本文 | `font-family` | `'Roboto Serif', serif` | UD ではないがスクリーン最適化された serif。Roboto 系で `I` と `l` が判別可能 |
+| 本文 | `font-family` | `'Roboto Serif Variable', 'Roboto Serif', serif` | UD ではないがスクリーン最適化された serif。Roboto 系で `I` と `l` が判別可能 |
 | 本文 | `font-weight` | `500` (medium) | 黒背景で 400 だと骨格が弱く見えるため 1 段太め |
 | 本文 | `color` | `rgb(var(--v-theme-readerBody))` (`#F2F0EA`) | 純白だとコントラスト過剰。暖色寄りオフホワイト |
 | 本文 | `font-optical-sizing` | `auto` | variable font の opsz 軸を使い、大サイズで線が痩せないようにする |
@@ -150,5 +190,6 @@ colors: {
 
 - `src/plugins/vuetify.js` — テーマカラー定義 (色を変えるならここ)
 - `src/pages/ReaderPage.vue` — `.reader-line` / `:deep(b)` / `:deep(u)` 寸法・ウェイト
-- `index.html` — Roboto Serif の Google Fonts 読み込み (`<head>`)
+- `src/main.js` — `@fontsource-variable/roboto-serif/standard.css` のインポート
+- `package.json` — `@fontsource-variable/roboto-serif` の依存
 - `CLAUDE.md` — 「Vuetify の色指定はテーマ変数を経由する」規約

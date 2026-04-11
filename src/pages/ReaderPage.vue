@@ -204,7 +204,7 @@ useKeyboard((event) => {
    * Documents/reader-typography.md を参照。
    * 色値はハードコードせず Vuetify テーマ変数 (src/plugins/vuetify.js) 経由。
    */
-  font-family: 'Roboto Serif', serif;
+  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
   font-weight: 500;
   font-optical-sizing: auto;
   color: rgb(var(--v-theme-readerBody));

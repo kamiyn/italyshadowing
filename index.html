@@ -5,17 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Italy Shadowing</title>
     <!--
-      Reader 本文用フォント (Roboto Serif)。
-      適用範囲は src/pages/ReaderPage.vue の .reader-line のみ。
-      weight 500 (本文) / 700 (<b> アクセント母音) を使う。
+      Reader 本文用フォント (Roboto Serif) は npm パッケージ
+      @fontsource-variable/roboto-serif (src/main.js でインポート) からビルド時に
+      埋め込む。CDN 依存を避けるため index.html での外部読み込みはしない。
       設計根拠と調整方法は Documents/reader-typography.md を参照。
     -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Roboto+Serif:opsz,wght@8..144,500;8..144,700&display=swap"
-    />
     <!--
       SPA single page apps for GitHub Pages — adapted from
       https://github.com/rafgraph/spa-github-pages (MIT).
