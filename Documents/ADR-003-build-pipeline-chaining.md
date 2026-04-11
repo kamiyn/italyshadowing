@@ -2,17 +2,18 @@
 
 ## Status
 
-Accepted
+Accepted (2025-Q1 制定 / 2026-04 dataClient inline 化に伴い 3 ステップ → 2 ステップに改定)
 
 ## Context
 
-本リポジトリのビルドは次の 3 ステップからなる。
+本リポジトリのビルドは次の 2 ステップからなる。
 
-1. `generate-index` — `data/` を走査し `data/index.json` を再生成する (ADR-001 の教材ファイル名バリデーションもここで走る)
-2. `lint-fix` — ESLint による自動修正とフォーマット
-3. `vite build` — rolldown-vite による本ビルド
+1. `lint-fix` — ESLint による自動修正とフォーマット
+2. `vite build` — rolldown-vite による本ビルド (data/*.json は `import.meta.glob` で JS バンドルへ inline される)
 
 各ステップの起動方法について次の選択肢を検討した。
+
+> **改定経緯**: 旧版は `generate-index → lint-fix → vite build` の 3 ステップだった。`generate-index` は `data/index.json` を生成する Node スクリプトで、ADR-001 の教材ファイル名バリデーションも担っていた。後続改定で `data/*.json` を Vite の `import.meta.glob` で JS バンドルへ inline する方針に切り替えたため、`scripts/generate-index.mjs` と `data/index.json` を撤廃。教材ファイル名の fail-loud 検証は `src/lib/dataClient.js` の module init に移管した (ADR-001 参照)。これに伴い build pipeline は 2 ステップに簡略化された。
 
 ## Options
 
@@ -25,14 +26,14 @@ Accepted
 `package.json` の `build` スクリプトに直列連結を書く。
 
 ```json
-"build": "npm run generate-index && npm run lint-fix && vite build"
+"build": "npm run lint-fix && vite build"
 ```
 
 ## Rationale
 
-- **順序の明示性**: 3 ステップの順序がスクリプト文面から一目で読める。`prebuild` フックは暗黙実行になるため、どの順でどのステップが走るかが `package.json` を横に読まないと分からない。
+- **順序の明示性**: 2 ステップの順序がスクリプト文面から一目で読める。`prebuild` フックは暗黙実行になるため、どの順でどのステップが走るかが `package.json` を横に読まないと分からない。
 - **中断挙動が自然**: `&&` は先行コマンドが非ゼロ終了なら後続を実行しないため、`lint-fix` が未修正エラーで落ちた時点で `vite build` に進まず中断する、という仕様要件 (`Development.md` 「ビルド時の前処理」) を追加コードなしで満たす。
-- **generate-index は fail-loud**: ADR-001 の教材ファイル名バリデーションで違反を検出したら非ゼロ終了する。これが `&&` で後段のビルドを即座に停止させる。
+- **fail-loud は dataClient に統合済み**: ADR-001 の教材ファイル名バリデーションは旧 `generate-index.mjs` から `src/lib/dataClient.js` の module init validation に移管された。`vite build` の中で `import.meta.glob` 経由でファイル名が dataClient のチェックを通り、不一致なら throw → CI / dev 起動が落ちる。pipeline を独立した検証ステップに分割する必要は無い。
 - **Vite プラグイン不採用理由**: `lint-fix` を build 前に走らせる性質上、Vite の lifecycle フック内ではなく build プロセスの外側で直列化する必要がある。
 
 ## Consequences
@@ -46,4 +47,4 @@ Accepted
 - [`Development.md`](Development.md) 「ビルド時の前処理」 (旧 `README.md` から移動。PR #9 で再配置)
 - `package.json` `scripts.build`
 - `.github/workflows/deploy.yml` build job
-- ADR-001: 教材ファイル名正規表現の重複管理 (generate-index の fail-loud 挙動の前提)
+- ADR-001: 教材ファイル名正規表現の重複管理 (fail-loud 検証が dataClient module init に移管された経緯)

@@ -21,15 +21,17 @@
 flowchart TD
     user[User] --> homePage[HomePage]
     user --> readerPage[ReaderPage]
-    homePage --> indexJson["data/index.json"]
-    readerPage --> lessonJson["data/<filename>.json"]
+    homePage --> dataClient["dataClient (inlined lessons)"]
+    readerPage --> dataClient
     readerPage --> routerState[RouteQueryState]
-    buildScript[BuildScript] --> dataDir["data/*.json"]
-    buildScript --> indexJson
-    ciWorkflow[GitHubActions] --> buildScript
-    ciWorkflow --> staticSite[StaticSiteArtifacts]
+    dataDir["data/*.json"] --> viteBuild[ViteBuild]
+    viteBuild --> dataClient
+    ciWorkflow[GitHubActions] --> viteBuild
+    viteBuild --> staticSite[StaticSiteArtifacts]
     staticSite --> githubPages[GitHubPages]
 ```
+
+教材 JSON は `import.meta.glob({ eager: true })` により Vite の build / dev で JS バンドルへ inline される。runtime fetch は発生せず、HomePage / ReaderPage は `src/lib/dataClient.js` の `fetchIndex()` / `fetchLesson()` を介して inline 済みのデータを参照する。
 
 ## 画面構成
 
@@ -37,7 +39,7 @@ flowchart TD
 
 トップページの責務は教材一覧の表示と選択である。
 
-- `data/index.json` を読み込み、教材一覧を表示する
+- `src/lib/dataClient.js` の `fetchIndex()` を呼び、JS バンドルへ inline 済みの教材データから `[{ filename, title, description }]` 一覧を取得する (runtime fetch なし)
 - 各教材の `title` と `description` を一覧上の表示に利用する
 - 現在選択中の教材を内部状態として保持する
 - `ArrowUp` / `ArrowDown` で選択を移動する
@@ -49,7 +51,7 @@ flowchart TD
 
 - ルートパラメータから `filename` を取得する
 - クエリから `page` を取得し、現在ページ番号として解釈する
-- 対応する JSON ファイルを読み込む
+- `src/lib/dataClient.js` の `fetchLesson(filename)` を呼び、JS バンドルへ inline 済みの該当教材データを取得する (runtime fetch なし)
 - `lines` 配列の該当要素を HTML として表示する
 - 学習時の視界を保つため、`title` と `description` は表示しない
 - `ArrowLeft` / `ArrowRight` で前後ページへ移動する
@@ -83,13 +85,15 @@ flowchart TD
 }
 ```
 
-### 一覧ファイル
+### 一覧の組み立て
 
-- 保存場所: `data/index.json`
-- 役割: トップページで表示する教材一覧の正本
-- 更新方式: ビルド前またはビルド時に `data/` を走査して再生成する
+`data/index.json` のような一覧ファイルは持たない。`src/lib/dataClient.js` が起動時に `import.meta.glob('../../data/*.json', { eager: true })` で全教材ファイルを取得し、各 JSON の `title` / `description` から動的に一覧を組み立てる。これにより:
 
-`data/index.json` には最低限、教材ファイル名の一覧が必要である。トップページで `title` / `description` を使うため、実装では一覧ファイルに表示用メタ情報を持たせるか、各教材ファイルを読んで集約するかを選べる。初期方針としては、ビルド時に `data/index.json` へ表示用メタ情報も含める構成が扱いやすい。
+- リポジトリに 1 ファイル余分にコミットする必要がない (旧 `data/index.json` は撤廃済み)
+- 教材追加・削除後に手動で一覧を更新する手間がない
+- HomePage 用一覧と本文表示で同じ inline データを共有できる
+
+`data/index.json` を Vite plugin で on-the-fly 生成する旧設計は、`import.meta.glob` による inline 化の採用に伴って撤廃された (関連: ADR-003 改定経緯)。
 
 ## ルーティングと状態管理
 
@@ -157,19 +161,17 @@ flowchart TD
     readerKey -->|Escape| goHome
 ```
 
-### ビルド時の教材一覧更新
+### ビルド時の教材取り込み
 
 ```mermaid
 flowchart TD
-    buildStart[BuildStart] --> scanDataDir[ScanDataDirectory]
-    scanDataDir --> filterJson[FilterLessonJsonFiles]
-    filterJson --> generateIndex[GenerateIndexJson]
-    generateIndex --> writeIndex[WriteDataIndexJson]
-    writeIndex --> runLintFix[RunLintFix]
+    buildStart[BuildStart] --> runLintFix[RunLintFix]
     runLintFix --> lintFixOk{LintFixSucceeded}
-    lintFixOk -->|yes| runViteBuild[RunViteRolldownBuild]
     lintFixOk -->|no| stopBuild[StopBuild]
-    runViteBuild --> publishArtifacts[PublishStaticArtifacts]
+    lintFixOk -->|yes| runViteBuild[RunViteRolldownBuild]
+    runViteBuild --> globData["import.meta.glob<br/>(data/*.json)"]
+    globData --> bundleJs[BundleJsWithInlinedLessons]
+    bundleJs --> publishArtifacts[PublishStaticArtifacts]
 ```
 
 ## ビルドと配備
@@ -181,9 +183,9 @@ flowchart TD
 - `lint-fix` は ESLint による自動修正とフォーマットを行う
 - ESLint ルールセットは Nuxt 4 標準をベースにする
 - Vite Rolldown でアプリをビルドする
-- ビルド前に `data/` を走査し、`data/index.json` を更新する
 - ビルドプロセス内で `lint-fix` を実行し、整形済み状態で成果物を生成する
 - `lint-fix` 実行後もエラーが残る場合は、Vite ビルドへ進まずに処理を失敗終了とする
+- 教材 JSON は `src/lib/dataClient.js` の `import.meta.glob` を経由して JS バンドルへ inline される (`dist/data/` は生成されない)
 - 出力物は静的ファイルとして生成する
 
 ### 配備
@@ -208,12 +210,14 @@ flowchart TD
 - ルーター
   - `filename` と `page` の解釈
   - URL 更新による状態遷移
-- ビルドスクリプト
-  - `data/` 走査
-  - `data/index.json` 更新
+- ビルドパイプライン (`package.json` の `scripts.build`)
   - `lint-fix` 実行
   - `lint-fix` 失敗時のビルド停止
-  - Vite ビルド起動
+  - Vite ビルド起動 (`import.meta.glob` で `data/*.json` を JS バンドルへ inline)
+- `src/lib/dataClient.js`
+  - 起動時に `import.meta.glob` 結果から教材 map を構築
+  - ファイル名の fail-loud 検証
+  - `fetchIndex()` / `fetchLesson()` の API 提供
 - GitHub Actions
   - ビルドと GitHub Pages 公開
 

@@ -8,8 +8,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "generate-index": "node scripts/generate-index.mjs",
-    "build": "npm run generate-index && npm run lint-fix && vite build",
+    "build": "npm run lint-fix && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint-fix": "eslint . --fix"

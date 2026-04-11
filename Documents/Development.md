@@ -36,15 +36,14 @@ npm run dev
 - `npm install` で依存関係を取得します
 - `npm run dev` で Vite Rolldown の開発サーバーが起動します
 - 起動時にコンソールへ表示される URL (既定では `http://localhost:5173/italyshadowing/`) をブラウザで開くとアプリが表示されます
-- 開発サーバーは `data/` 配下の教材 JSON をそのまま配信するため、教材ファイルを編集して保存すれば反映されます
-- 新しい教材ファイルを追加した場合は `npm run generate-index` を一度実行して `data/index.json` を更新してください
+- `data/*.json` は Vite の `import.meta.glob` を経由して JS バンドルへ取り込まれており、ファイルを編集すると Vite の HMR で自動的にアプリへ反映されます
+- 新しい教材ファイルを追加・削除した場合も同様に HMR で反映されます (一覧用の `index.json` は不要で、`src/lib/dataClient.js` が動的に組み立てます)
 
 ## ビルド時の前処理
 
 ビルドプロセスでは、Vite の本ビルドの前に次を実行します。
 
-- `data/` を走査して `data/index.json` を生成または更新する
 - `lint-fix` を実行してソース整形と lint 修正を反映する
 - `lint-fix` で解決できないエラーが残った場合は、その時点でビルドを停止する
 
-その後に静的サイトを生成し、GitHub Pages へ配備します。
+その後に静的サイトを生成し、GitHub Pages へ配備します。教材 JSON は Vite が `import.meta.glob` で JS バンドルに焼き込むため `dist/data/` は生成されません (バンドルの content hash がそのままキャッシュバスティング機構として働きます)。
