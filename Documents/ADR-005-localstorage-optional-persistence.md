@@ -42,7 +42,7 @@ Accepted
 
 - Pros: ストレージ制約のあるブラウザ / 環境でも UI が落ちない。Safari private mode / 企業端末でも degrade で済む。
 - Cons: 永続化失敗がサイレントになるため、デバッグ時に「保存したはずなのに次回反映されない」原因の追跡がやや難しい。コンソールログを残すかは案件次第。
-- 参照実装: `src/composables/useFontScale.js` の `loadInitial` / `watch(fontScale)` 内 try/catch
+- 参照実装: `src/composables/useFontScale.js` の `loadInitial()` / `persistFontScale()` 内 try/catch
 
 ## References
 
