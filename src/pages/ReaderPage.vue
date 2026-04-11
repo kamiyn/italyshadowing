@@ -67,6 +67,14 @@ const effectivePage = computed(() => {
 
 const currentLine = computed(() => lines.value[effectivePage.value] ?? '')
 
+// 表示条件・派生文字列は CLAUDE.md の方針に従い template 側に直書きせず
+// computed へ寄せる。
+const isLoading = computed(() => lesson.value === null)
+const isEmptyLesson = computed(() => !isLoading.value && lines.value.length === 0)
+const hasLines = computed(() => !isLoading.value && lines.value.length > 0)
+const showProgress = computed(() => hasLines.value)
+const progressLabel = computed(() => `${effectivePage.value + 1} / ${lines.value.length}`)
+
 // URL を状態の正本として扱うため、?page= がクランプ対象になる値
 // (範囲外・負数・非数値・ゼロの冗長表記・先頭ゼロ付きなど) だった場合に
 // アドレスバーを正規形へ書き換える。そうしないと共有リンクの ?page=999 が
@@ -134,13 +142,13 @@ useKeyboard((event) => {
         {{ error }}
       </p>
       <div
-        v-else-if="lesson === null"
+        v-else-if="isLoading"
         class="reader-loading"
       >
         Loading...
       </div>
       <p
-        v-else-if="lines.length === 0"
+        v-else-if="isEmptyLesson"
         class="reader-empty"
       >
         この教材には表示できる行がありません。
@@ -151,10 +159,10 @@ useKeyboard((event) => {
         v-html="currentLine"
       />
       <p
-        v-if="lesson !== null && lines.length > 0"
+        v-if="showProgress"
         class="reader-progress"
       >
-        {{ effectivePage + 1 }} / {{ lines.length }}
+        {{ progressLabel }}
       </p>
     </div>
   </v-main>

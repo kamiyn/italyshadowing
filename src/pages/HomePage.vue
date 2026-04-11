@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchIndex } from '../lib/dataClient.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
@@ -25,10 +25,20 @@ onMounted(async () => {
   }
 })
 
+// 表示条件は CLAUDE.md の方針に従い template 側に直書きせず computed へ寄せる。
+const hasLessons = computed(() => lessons.value.length > 0)
+const isEmptyState = computed(() => !isLoading.value && !error.value && !hasLessons.value)
+const showHint = computed(() => !error.value && !isLoading.value && hasLessons.value)
+
 function openSelected() {
   const lesson = lessons.value[selectedIndex.value]
   if (!lesson) return
   router.push({ name: 'reader', params: { filename: lesson.filename } })
+}
+
+function selectAndOpen(index) {
+  selectedIndex.value = index
+  openSelected()
 }
 
 useKeyboard((event) => {
@@ -69,7 +79,7 @@ useKeyboard((event) => {
         Loading...
       </p>
       <p
-        v-else-if="lessons.length === 0"
+        v-else-if="isEmptyState"
         class="home-empty"
       >
         教材がまだ登録されていません。
@@ -84,13 +94,16 @@ useKeyboard((event) => {
           :key="lesson.filename"
           :active="i === selectedIndex"
           class="lesson-item"
-          @click="selectedIndex = i; openSelected()"
+          @click="selectAndOpen(i)"
         >
           <v-list-item-title>{{ lesson.title }}</v-list-item-title>
           <v-list-item-subtitle>{{ lesson.description }}</v-list-item-subtitle>
         </v-list-item>
       </v-list>
-      <p class="home-hint">
+      <p
+        v-if="showHint"
+        class="home-hint"
+      >
         ↑ ↓ で選択 / Enter で開く
       </p>
     </v-container>
