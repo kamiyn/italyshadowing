@@ -15,8 +15,16 @@ export async function fetchIndex() {
   return res.json()
 }
 
+function encodeLessonFilename(filename) {
+  if (typeof filename !== 'string' || !/^[A-Za-z0-9_-]+$/.test(filename)) {
+    throw new Error('Invalid lesson filename')
+  }
+  return encodeURIComponent(filename)
+}
+
 export async function fetchLesson(filename, { signal } = {}) {
-  const res = await fetch(dataUrl(`${filename}.json`), { signal })
+  const safeFilename = encodeLessonFilename(filename)
+  const res = await fetch(dataUrl(`${safeFilename}.json`), { signal })
   if (!res.ok) {
     throw new Error(`Failed to load lesson ${filename}: ${res.status}`)
   }
