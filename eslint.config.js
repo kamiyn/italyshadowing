@@ -27,7 +27,7 @@ export default createConfigForNuxt({
   })
   .append({
     name: 'italyshadowing/scripts-node',
-    files: ['scripts/**/*.{js,mjs}', 'vite.config.js'],
+    files: ['scripts/**/*.{js,mjs}', 'vite.config.js', 'vite/**/*.{js,mjs}'],
     languageOptions: {
       globals: {
         ...globals.node,
