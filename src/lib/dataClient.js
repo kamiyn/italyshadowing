@@ -15,8 +15,8 @@ export async function fetchIndex() {
   return res.json()
 }
 
-export async function fetchLesson(filename) {
-  const res = await fetch(dataUrl(`${filename}.json`))
+export async function fetchLesson(filename, { signal } = {}) {
+  const res = await fetch(dataUrl(`${filename}.json`), { signal })
   if (!res.ok) {
     throw new Error(`Failed to load lesson ${filename}: ${res.status}`)
   }

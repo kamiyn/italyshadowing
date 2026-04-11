@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchLesson } from '../lib/dataClient.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
@@ -16,19 +16,45 @@ const router = useRouter()
 const lesson = ref(null)
 const error = ref(null)
 
+// Tracks the in-flight fetchLesson() so a rapid filename change can cancel
+// the previous request and discard any stale result. Without this, an older
+// fetch resolving after a newer one would overwrite `lesson` with stale data.
+let currentController = null
+
 async function load(name) {
+  if (currentController) {
+    currentController.abort()
+  }
+  const controller = new AbortController()
+  currentController = controller
+
   lesson.value = null
   error.value = null
   try {
-    lesson.value = await fetchLesson(name)
+    const data = await fetchLesson(name, { signal: controller.signal })
+    // Bail if a newer load() has superseded this one. Covers the narrow race
+    // where the fetch resolved successfully *just* before abort() was called.
+    if (controller.signal.aborted) return
+    lesson.value = data
   }
   catch (e) {
+    if (controller.signal.aborted || e.name === 'AbortError') return
     error.value = String(e)
+  }
+  finally {
+    if (currentController === controller) {
+      currentController = null
+    }
   }
 }
 
 onMounted(() => load(props.filename))
 watch(() => props.filename, name => load(name))
+onUnmounted(() => {
+  if (currentController) {
+    currentController.abort()
+  }
+})
 
 const lines = computed(() => (Array.isArray(lesson.value?.lines) ? lesson.value.lines : []))
 

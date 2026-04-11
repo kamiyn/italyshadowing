@@ -12,6 +12,10 @@ const DATA_DIR = fileURLToPath(new URL('./data', import.meta.url))
 // Kept inline to avoid an extra dependency on vite-plugin-static-copy.
 function dataDirPlugin() {
   const urlPrefixes = ['/data/', `${BASE}data/`]
+  // Captured from configResolved so we always copy into the actual build
+  // output directory, not a hard-coded ./dist path. Honors any user override
+  // of build.outDir or alternate build modes/targets.
+  let resolvedOutDir = null
 
   async function copyRecursive(src, dest) {
     await fs.mkdir(dest, { recursive: true })
@@ -30,6 +34,9 @@ function dataDirPlugin() {
 
   return {
     name: 'italyshadowing-data-dir',
+    configResolved(config) {
+      resolvedOutDir = path.resolve(config.root, config.build.outDir)
+    },
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
         const url = req.url || ''
@@ -55,8 +62,10 @@ function dataDirPlugin() {
       })
     },
     async closeBundle() {
-      const outDir = fileURLToPath(new URL('./dist/data', import.meta.url))
-      await copyRecursive(DATA_DIR, outDir)
+      if (!resolvedOutDir) {
+        throw new Error('italyshadowing-data-dir: outDir not resolved before closeBundle')
+      }
+      await copyRecursive(DATA_DIR, path.join(resolvedOutDir, 'data'))
     },
   }
 }
