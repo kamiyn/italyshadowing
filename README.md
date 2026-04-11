@@ -78,6 +78,21 @@ Lint の規約は Nuxt 4 の標準 ESLint ルールを、Nuxt アプリケーシ
 - `lint-fix`
   - ESLint による静的検査と自動修正、およびフォーマットを実行する
 
+## デバッグ開始方法
+
+リポジトリをクローンした直後の手順です。
+
+```sh
+npm install
+npm run dev
+```
+
+- `npm install` で依存関係を取得します
+- `npm run dev` で Vite Rolldown の開発サーバーが起動します
+- 起動時にコンソールへ表示される URL (既定では `http://localhost:5173/italyshadowing/`) をブラウザで開くとアプリが表示されます
+- 開発サーバーは `data/` 配下の教材 JSON をそのまま配信するため、教材ファイルを編集して保存すれば反映されます
+- 新しい教材ファイルを追加した場合は `npm run generate-index` を一度実行して `data/index.json` を更新してください
+
 ## ビルド時の前処理
 
 ビルドプロセスでは、Vite の本ビルドの前に次を実行します。
