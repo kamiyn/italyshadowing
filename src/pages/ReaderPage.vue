@@ -201,9 +201,14 @@ useKeyboard((event) => {
   width: 100%;
 }
 
-/* 教材コンテンツ中の <b> 要素に対するスタイル */
+/* 教材コンテンツ中の <b> 要素に対するスタイル
+ * シャドーイングのアクセント母音強調用途。
+ *  - font-weight は通常 bold (700) より 1 段軽い 600 (semi-bold)
+ *  - 色は Vuetify error 色を白で混色して少し明るい赤に
+ * テーマ追従のため色は theme 変数経由で指定する。 */
 .reader-line :deep(b) {
-  font-weight: 700;
+  font-weight: 600;
+  color: color-mix(in srgb, rgb(var(--v-theme-error)) 80%, white 20%);
 }
 
 /* 教材コンテンツ中の <u> 要素に対するスタイル */
