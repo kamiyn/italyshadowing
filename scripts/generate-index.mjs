@@ -12,6 +12,14 @@ const HERE = path.dirname(fileURLToPath(import.meta.url))
 const DATA_DIR = path.resolve(HERE, '..', 'data')
 const INDEX_FILE = path.join(DATA_DIR, 'index.json')
 
+// Same constraint enforced by src/router/index.js (FILENAME_PATTERN) and
+// src/lib/dataClient.js (encodeLessonFilename), and documented in README.md
+// under "教材ファイル名の制約". Kept in sync by convention. If a lesson file
+// slips through with a disallowed name, the runtime router would redirect
+// it away and fetchLesson() would reject it — so we fail loudly here instead
+// of producing an index.json that lists unreachable entries.
+const FILENAME_PATTERN = /^[A-Za-z0-9_-]+$/
+
 async function main() {
   const entries = await fs.readdir(DATA_DIR, { withFileTypes: true })
   const lessons = []
@@ -20,6 +28,16 @@ async function main() {
     if (!entry.isFile()) continue
     if (!entry.name.endsWith('.json')) continue
     if (entry.name === 'index.json') continue
+
+    const stem = entry.name.replace(/\.json$/, '')
+    if (!FILENAME_PATTERN.test(stem)) {
+      throw new Error(
+        `Invalid lesson filename: "${entry.name}". `
+        + `The stem "${stem}" must match ${FILENAME_PATTERN} `
+        + `(半角英数字・ハイフン・アンダースコアのみ). `
+        + `Rename or remove the file. See README.md "教材ファイル名の制約".`,
+      )
+    }
 
     const filePath = path.join(DATA_DIR, entry.name)
     let parsed
@@ -32,7 +50,7 @@ async function main() {
     }
 
     lessons.push({
-      filename: entry.name.replace(/\.json$/, ''),
+      filename: stem,
       title: typeof parsed.title === 'string' ? parsed.title : '',
       description: typeof parsed.description === 'string' ? parsed.description : '',
     })
