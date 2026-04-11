@@ -1,0 +1,3 @@
+* text=auto eol=lf
+*.vue linguist-language=Vue
+*.json text eol=lf
