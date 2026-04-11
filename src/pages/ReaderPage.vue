@@ -112,31 +112,45 @@ useKeyboard((event) => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  /* 上下は 2rem、左右は画面幅の 10% を余白として確保する */
+  padding: 2rem 10%;
   text-align: center;
 }
 
 .reader-line {
-  font-size: clamp(1.5rem, 4vw, 2.75rem);
+  /*
+   * フォントサイズ調整手順
+   * - clamp(最小値, 可変値, 最大値) で指定しています。
+   * - 全体的に文字を大きく/小さくしたい場合は 3 つの値をすべて同じ比率で増減してください。
+   * - 画面幅への追従の強さを変えたい場合は中央 (vw 単位) の値だけを変更してください。
+   * - 例: 元のサイズに戻す → clamp(1.5rem, 4vw, 2.75rem)
+   */
+  font-size: clamp(3rem, 8vw, 5.5rem);
   line-height: 1.5;
-  max-width: 960px;
+  width: 100%;
 }
 
+/* 教材コンテンツ中の <b> 要素に対するスタイル */
 .reader-line :deep(b) {
   font-weight: 700;
 }
 
+/* 教材コンテンツ中の <u> 要素に対するスタイル */
+.reader-line :deep(u) {
+  text-decoration: underline;
+}
+
 .reader-progress {
   margin-top: 2rem;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(var(--v-theme-on-background), 0.6);
   font-size: 0.875rem;
 }
 
 .reader-error {
-  color: #b00020;
+  color: rgb(var(--v-theme-error));
 }
 
 .reader-loading {
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(var(--v-theme-on-background), 0.6);
 }
 </style>

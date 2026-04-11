@@ -106,15 +106,15 @@ useKeyboard((event) => {
 
 .home-hint {
   margin-top: 1.5rem;
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(var(--v-theme-on-background), 0.6);
   font-size: 0.875rem;
 }
 
 .home-error {
-  color: #b00020;
+  color: rgb(var(--v-theme-error));
 }
 
 .home-empty {
-  color: rgba(0, 0, 0, 0.6);
+  color: rgba(var(--v-theme-on-background), 0.6);
 }
 </style>

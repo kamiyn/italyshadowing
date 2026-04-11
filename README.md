@@ -34,6 +34,30 @@
 - HTML 描画を行うため、教材データはリポジトリ管理下の信頼済みデータに限定し、不特定の外部入力は受けません
 - 教材ファイルの一覧は `data/index.json` で管理します
 
+## 教材で使える HTML 要素
+
+`lines` 内の文字列は v-html で描画されます。技術的にはほぼ任意の HTML が書けますが、教材表現として推奨し、`ReaderPage.vue` 側でスタイルを定義しているのは次の要素です。
+
+| 要素 | 用途 | スタイル定義箇所 |
+|------|------|------------------|
+| `<b>` | 太字での強調 | `src/pages/ReaderPage.vue` の `.reader-line :deep(b)` |
+| `<u>` | 下線での強調 | `src/pages/ReaderPage.vue` の `.reader-line :deep(u)` |
+
+例:
+
+```json
+{
+  "lines": [
+    "<b>Vediamo...</b> In Europa ci sono circa duecentoventicinque lingue autoctone.",
+    "Il <u>basco</u> è la lingua indigena più antica d'Europa."
+  ]
+}
+```
+
+新しい装飾要素を追加する場合は、`ReaderPage.vue` の `<style scoped>` 内に `:deep()` セレクタを追記し、本表にも追加してください。
+
+なお、教材データは信頼済みデータ前提で扱うため、`<script>` などの実行を伴う要素は教材ファイル側で記述しないでください。
+
 ## URL 仕様
 
 - `/` : 教材一覧ページ
