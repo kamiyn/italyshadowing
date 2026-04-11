@@ -31,7 +31,8 @@ function loadInitial() {
     const raw = window.localStorage.getItem(STORAGE_KEY)
     if (raw == null) return FONT_SCALE_DEFAULT
     return clampScale(Number.parseFloat(raw))
-  } catch {
+  }
+  catch {
     return FONT_SCALE_DEFAULT
   }
 }
@@ -56,7 +57,16 @@ watch(fontScale, (value) => {
   }
   applyToDom(clamped)
   if (typeof window === 'undefined') return
-  window.localStorage.setItem(STORAGE_KEY, String(clamped))
+  // localStorage.setItem は QuotaExceededError や private browsing 環境などで
+  // throw する可能性がある。永続化失敗はその場限りの設定として許容し、UI が
+  // 落ちないように握りつぶす (in-memory の fontScale はそのままセッション中
+  // 有効なので、表示は正しく更新され続ける)。
+  try {
+    window.localStorage.setItem(STORAGE_KEY, String(clamped))
+  }
+  catch {
+    // ignore — 次回起動時にデフォルト値に戻る挙動で許容
+  }
 })
 
 export function useFontScale() {
