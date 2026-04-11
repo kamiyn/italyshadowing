@@ -23,7 +23,8 @@ import '@fontsource-variable/roboto-serif/standard.css'
 
 としてインポートする。Vite が `standard.css` 内の `@font-face` URL を解決し、
 `woff2` ファイルを `dist/assets/` にハッシュ付きでバンドルする。
-**Google Fonts CDN への外部読み込みは行わない** ため、CDN 障害時にもフォールバックなしでフォントが効く。
+**Google Fonts CDN への外部読み込みは行わない** ため、外部 CDN への依存を避けられる。
+フォントファイルはアプリのビルド成果物に含まれるため、オフラインや閉域環境でも表示しやすい。
 
 CSS の `font-family` は `'Roboto Serif Variable'` で参照する (`Variable` サフィックスは fontsource の慣例)。
 ローカルにシステムインストールされた `Roboto Serif` を優先したい場合に備えて、
