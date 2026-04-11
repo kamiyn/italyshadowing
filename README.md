@@ -60,10 +60,32 @@
 - Vue
 - Vuetify
 - Vite Rolldown
+- ESLint
 - GitHub Pages
 - GitHub Actions
 
 Nuxt は使わず、単機能の静的サイトとして構成します。
+
+Lint の規約は Nuxt 4 の標準 ESLint ルールを、Nuxt アプリケーションではない本アプリにもコーディング規約として援用する想定です。
+
+## 開発コマンド
+
+`package.json` には少なくとも次の npm スクリプトを定義する想定です。
+
+- `lint`
+  - ESLint による静的検査を実行する
+- `lint-fix`
+  - ESLint による静的検査と自動修正、およびフォーマットを実行する
+
+## ビルド時の前処理
+
+ビルドプロセスでは、Vite の本ビルドの前に次を実行します。
+
+- `data/` を走査して `data/index.json` を生成または更新する
+- `lint-fix` を実行してソース整形と lint 修正を反映する
+- `lint-fix` で解決できないエラーが残った場合は、その時点でビルドを停止する
+
+その後に静的サイトを生成し、GitHub Pages へ配備します。
 
 ## 関連ドキュメント
 

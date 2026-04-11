@@ -11,6 +11,7 @@
 - 教材データはリポジトリ管理下の静的ファイルとして扱う
 - URL を状態の正本とし、ページ位置を `?page=` で表現する
 - キーボード操作だけで主要な導線を完結できるようにする
+- ESLint ルールは Nuxt 4 標準を規約として援用する
 
 ## システム全体像
 
@@ -159,7 +160,10 @@ flowchart TD
     scanDataDir --> filterJson[FilterLessonJsonFiles]
     filterJson --> generateIndex[GenerateIndexJson]
     generateIndex --> writeIndex[WriteDataIndexJson]
-    writeIndex --> runViteBuild[RunViteRolldownBuild]
+    writeIndex --> runLintFix[RunLintFix]
+    runLintFix --> lintFixOk{LintFixSucceeded}
+    lintFixOk -->|yes| runViteBuild[RunViteRolldownBuild]
+    lintFixOk -->|no| stopBuild[StopBuild]
     runViteBuild --> publishArtifacts[PublishStaticArtifacts]
 ```
 
@@ -167,8 +171,14 @@ flowchart TD
 
 ### ビルド
 
+- `package.json` に `lint` と `lint-fix` の npm スクリプトを定義する
+- `lint` は ESLint による静的検査を行う
+- `lint-fix` は ESLint による自動修正とフォーマットを行う
+- ESLint ルールセットは Nuxt 4 標準をベースにする
 - Vite Rolldown でアプリをビルドする
 - ビルド前に `data/` を走査し、`data/index.json` を更新する
+- ビルドプロセス内で `lint-fix` を実行し、整形済み状態で成果物を生成する
+- `lint-fix` 実行後もエラーが残る場合は、Vite ビルドへ進まずに処理を失敗終了とする
 - 出力物は静的ファイルとして生成する
 
 ### 配備
@@ -196,6 +206,9 @@ flowchart TD
 - ビルドスクリプト
   - `data/` 走査
   - `data/index.json` 更新
+  - `lint-fix` 実行
+  - `lint-fix` 失敗時のビルド停止
+  - Vite ビルド起動
 - GitHub Actions
   - ビルドと GitHub Pages 公開
 
@@ -206,3 +219,4 @@ flowchart TD
 - HTML 描画は信頼済みデータを前提にしつつ、データ投入経路を限定する
 - トップページの選択状態を視覚的に分かりやすくする
 - 一覧用メタ情報と本文表示責務を混在させない
+- `lint-fix` をビルドに組み込むため、ローカル開発時との差分が出にくい運用にする
