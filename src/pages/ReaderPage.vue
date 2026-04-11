@@ -67,6 +67,29 @@ const effectivePage = computed(() => {
 
 const currentLine = computed(() => lines.value[effectivePage.value] ?? '')
 
+// URL を状態の正本として扱うため、?page= がクランプ対象になる値
+// (範囲外・負数・非数値・ゼロの冗長表記・先頭ゼロ付きなど) だった場合に
+// アドレスバーを正規形へ書き換える。そうしないと共有リンクの ?page=999 が
+// 最終行を表示しているのにアドレスバーは 999 のままという不整合になる。
+watch(
+  [lesson, () => route.query.page],
+  () => {
+    if (lesson.value === null) return
+    if (lines.value.length === 0) return
+
+    const canonical = effectivePage.value
+    const expectedQueryValue = canonical === 0 ? undefined : String(canonical)
+    if (route.query.page === expectedQueryValue) return
+
+    router.replace({
+      name: 'reader',
+      params: { filename: props.filename },
+      query: canonical === 0 ? {} : { page: String(canonical) },
+    })
+  },
+  { immediate: true },
+)
+
 function goToPage(next) {
   if (lines.value.length === 0) return
   const clamped = Math.min(Math.max(next, 0), lines.value.length - 1)
