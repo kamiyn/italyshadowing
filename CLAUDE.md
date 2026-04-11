@@ -147,7 +147,7 @@ color: rgb(var(--v-theme-error));
 
 ## サブパス配備の URL は `import.meta.env.BASE_URL` 起点で組み立てる
 
-GitHub Pages のサブパス配備等では、`/data/...` や `/...` のリテラル指定は dev では通っても prod で 404 になります。`fetch` や router 周辺では必ず `import.meta.env.BASE_URL` を前置してください。本リポジトリの参照実装は `src/lib/dataClient.js` の `dataUrl()` です。
+GitHub Pages のサブパス配備等では、`/...` のリテラル指定は dev では通っても prod で 404 になります。router や静的アセット URL は必ず `import.meta.env.BASE_URL` を起点に組み立ててください。なお、教材データは `src/lib/dataClient.js` で `import.meta.glob` により JS バンドルへ inline されているため、`data/*.json` を runtime fetch する前提ではありません。
 
 ## Architecture Decision Records
 
