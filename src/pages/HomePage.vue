@@ -60,8 +60,8 @@ function selectAndOpen(index) {
 }
 
 // フォントサイズ調整 (←/→)。スライダーがフォーカスされている場合は
-// useKeyboard 側が input イベントを skip するため Vuetify ネイティブの
-// スライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
+// useKeyboard 側が text-entry 要素に対する keydown ハンドラ実行を skip するため
+// Vuetify ネイティブのスライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
 function adjustFontScale(delta) {
   const next = fontScale.value + delta
   const clamped = Math.min(FONT_SCALE_MAX, Math.max(FONT_SCALE_MIN, next))
