@@ -43,12 +43,14 @@ function dataDirPlugin() {
         const matched = urlPrefixes.find(p => url.startsWith(p))
         if (!matched) return next()
         const rel = url.slice(matched.length).split('?')[0]
-        // Disallow path traversal.
-        if (rel.includes('..')) {
+        const normalizedRel = path.posix.normalize(rel).replace(/^\/+/, '')
+        const dataDirRoot = path.resolve(DATA_DIR)
+        const filePath = path.resolve(dataDirRoot, normalizedRel)
+        // Disallow path traversal and absolute-path escapes.
+        if (filePath !== dataDirRoot && !filePath.startsWith(dataDirRoot + path.sep)) {
           res.statusCode = 400
           return res.end('bad request')
         }
-        const filePath = path.join(DATA_DIR, rel)
         try {
           const data = await fs.readFile(filePath)
           res.setHeader('Content-Type', 'application/json; charset=utf-8')
