@@ -5,7 +5,37 @@ import { fileURLToPath, URL } from 'node:url'
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 
-const BASE = '/italyshadowing/'
+// actions/configure-pages が build job で export する ASSET_PREFIX (URL のパス部分)
+// が存在する場合はそれを優先する。リポジトリ名変更やカスタムドメイン追加時に
+// このファイルのハードコード値とのズレ事故を防ぐため。CI 外 (dev / ローカル build)
+// では未設定なので、フォールバックとしてリポジトリ名のサブパスを使う。
+function normalizeBasePath(basePath) {
+  return basePath.endsWith('/') ? basePath : `${basePath}/`
+}
+
+function resolveRepoSubpath() {
+  const packageName = process.env.npm_package_name
+  if (packageName) {
+    const repoName = packageName.split('/').filter(Boolean).pop()
+    if (repoName) return `/${repoName}/`
+  }
+
+  const githubRepository = process.env.GITHUB_REPOSITORY
+  if (githubRepository) {
+    const repoName = githubRepository.split('/').filter(Boolean).pop()
+    if (repoName) return `/${repoName}/`
+  }
+
+  return '/italyshadowing/'
+}
+
+function resolveBase() {
+  const fromEnv = process.env.ASSET_PREFIX
+  if (fromEnv) return normalizeBasePath(fromEnv)
+  return resolveRepoSubpath()
+}
+
+const BASE = resolveBase()
 const DATA_DIR = fileURLToPath(new URL('./data', import.meta.url))
 
 // Serve repo-root data/ during dev and copy it into dist/data/ at build time.

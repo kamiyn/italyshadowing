@@ -6,6 +6,7 @@ import {
   KEY_ARROW_LEFT,
   KEY_ARROW_RIGHT,
   KEY_ARROW_UP,
+  KEY_ESCAPE,
   KEY_SPACE,
 } from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
@@ -131,6 +132,7 @@ useKeyboard((event) => {
       goToPage(effectivePage.value + 1)
       break
     case KEY_ARROW_UP:
+    case KEY_ESCAPE:
       event.preventDefault()
       router.push('/')
       break
