@@ -16,6 +16,7 @@ import {
   FONT_SCALE_MAX,
   FONT_SCALE_STEP,
 } from '../composables/useFontScale.js'
+import ReaderText from '../components/ReaderText.vue'
 
 const router = useRouter()
 const lessons = ref([])
@@ -208,11 +209,11 @@ useKeyboard((event) => {
             {{ fontScalePercent }}
           </template>
         </v-slider>
-        <div class="font-size-preview-box">
-          <span class="font-size-preview">Lorem Ipsum</span>
-        </div>
       </section>
     </v-container>
+    <div class="font-size-preview-box">
+      <ReaderText html="Lorem Ipsum" />
+    </div>
   </v-main>
 </template>
 
@@ -265,29 +266,16 @@ useKeyboard((event) => {
 }
 
 /*
- * プレビューは ReaderPage の .reader-line と全く同じ font-size 計算式を使う。
+ * プレビューは ReaderText コンポーネントを使い、ReaderPage 本文と
+ * 全く同じ font-size 計算式・font-family・色を共有する (重複定義しない)。
  * こうすることで HomePage で見ているサイズがそのまま教材表示時のサイズになる。
- * 高倍率でフレーム外にはみ出る場合があるので overflow: hidden で両端を切る。
+ *
+ * v-container の外に置いているため自然に画面幅全体を使う。
+ * padding: 0 10% で ReaderPage の .reader-shell と同じテキスト幅になる。
  */
 .font-size-preview-box {
-  width: 100%;
-  overflow: hidden;
   text-align: center;
   margin-top: 0.5rem;
-}
-
-.font-size-preview {
-  display: inline-block;
-  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
-  font-weight: 500;
-  font-optical-sizing: auto;
-  color: rgb(var(--v-theme-readerBody));
-  font-size: clamp(
-    calc(3rem * var(--reader-font-scale, 1)),
-    calc(8vw * var(--reader-font-scale, 1)),
-    calc(5.5rem * var(--reader-font-scale, 1))
-  );
-  line-height: 1.2;
-  white-space: nowrap;
+  padding: 0 10%;
 }
 </style>

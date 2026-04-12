@@ -1,7 +1,12 @@
 # Reader タイポグラフィ調整ガイド
 
-`src/pages/ReaderPage.vue` の `.reader-line` (シャドーイング教材本文) における
+`src/components/ReaderText.vue` の `.reader-text` (シャドーイング教材本文 +
+HomePage フォントサイズプレビュー) における
 フォント・配色・装飾の設計根拠と、見え方の調整方法をまとめる。
+
+このコンポーネントは ReaderPage 本文と HomePage プレビューで共通利用される
+ことを前提に設計されており、両画面で同じ font-family / font-weight /
+clamp 計算式 / 色 / 折り返し挙動を共有する。
 
 ## 設計の前提
 
@@ -43,7 +48,7 @@ CSS の `font-family` は `'Roboto Serif Variable'` で参照する (`Variable` 
 | **`standard.css`** | **wght + wdth + opsz** | **379 KB** |
 | `full.css` | wght + wdth + opsz + grad | 574 KB |
 
-`.reader-line` では `font-weight: 500/700` (wght) と `font-optical-sizing: auto`
+`.reader-text` では `font-weight: 500/700` (wght) と `font-optical-sizing: auto`
 (opsz) の両方を使うため、両軸を含む **standard 軸変種** が必要。`wdth` は使って
 いないが標準セットに含まれるためそのまま受け入れる。
 
@@ -150,10 +155,10 @@ colors: {
 ```
 
 ```css
-/* src/pages/ReaderPage.vue */
-.reader-line { color: rgb(var(--v-theme-readerBody)); }
-.reader-line :deep(b) { color: rgb(var(--v-theme-readerAccent)); }
-.reader-line :deep(u) {
+/* src/components/ReaderText.vue */
+.reader-text { color: rgb(var(--v-theme-readerBody)); }
+.reader-text :deep(b) { color: rgb(var(--v-theme-readerAccent)); }
+.reader-text :deep(u) {
   text-decoration-color: rgba(var(--v-theme-readerUnderline), 0.9);
 }
 ```
@@ -163,34 +168,34 @@ colors: {
 ## 見え方の調整指針
 
 実際に使ってみて違和感があった場合の **調整候補**。値を変えるのは
-基本的に `src/plugins/vuetify.js` (色) と `src/pages/ReaderPage.vue` (寸法) のみ。
+基本的に `src/plugins/vuetify.js` (色) と `src/components/ReaderText.vue` (寸法) のみ。
 
 ### `<b>` が弱く感じる (母音が前景化されない)
 
 | 試す変更 | ファイル | 値 |
 |---|---|---|
 | 色を一段濃いアンバーに | `vuetify.js` | `readerAccent: '#FFD27A'` |
-| ウェイトを上げる | `ReaderPage.vue` | `:deep(b) { font-weight: 750 }` ※variable font 利用時 |
+| ウェイトを上げる | `ReaderText.vue` | `:deep(b) { font-weight: 750 }` ※variable font 利用時 |
 
 ### `<b>` がうるさく感じる (チラつく / 主張が強すぎる)
 
 | 試す変更 | ファイル | 値 |
 |---|---|---|
-| 色はそのままウェイトだけ下げる | `ReaderPage.vue` | `:deep(b) { font-weight: 650 }` |
+| 色はそのままウェイトだけ下げる | `ReaderText.vue` | `:deep(b) { font-weight: 650 }` |
 | 色を本文寄りに | `vuetify.js` | `readerAccent: '#E8B05A'` 程度 |
 
 ### `<u>` が見えない
 
 | 試す変更 | ファイル | 値 |
 |---|---|---|
-| 太くする | `ReaderPage.vue` | `text-decoration-thickness: 0.12em` |
-| 不透明度を上げる | `ReaderPage.vue` | `rgba(..., 1.0)` |
+| 太くする | `ReaderText.vue` | `text-decoration-thickness: 0.12em` |
+| 不透明度を上げる | `ReaderText.vue` | `rgba(..., 1.0)` |
 
 ### `<u>` が強すぎる
 
 | 試す変更 | ファイル | 値 |
 |---|---|---|
-| 不透明度を下げる | `ReaderPage.vue` | `rgba(..., 0.7)` |
+| 不透明度を下げる | `ReaderText.vue` | `rgba(..., 0.7)` |
 | **文字色は絶対に変えない** | — | `color: inherit` を維持 |
 
 ### 目が疲れる / 眩しい
@@ -198,14 +203,14 @@ colors: {
 | 試す変更 | ファイル | 値 |
 |---|---|---|
 | 本文をさらに暖色寄りに | `vuetify.js` | `readerBody: '#ECE9E2'` |
-| 本文ウェイトを下げる | `ReaderPage.vue` | `font-weight: 450` (variable font 必須) |
+| 本文ウェイトを下げる | `ReaderText.vue` | `font-weight: 450` (variable font 必須) |
 
 ### 文字が痩せて見える (黒背景で骨が細い)
 
 | 試す変更 | ファイル | 値 |
 |---|---|---|
-| 本文ウェイトを上げる | `ReaderPage.vue` | `font-weight: 550` |
-| opsz を確認 | `ReaderPage.vue` | `font-optical-sizing: auto` が効いているか確認 |
+| 本文ウェイトを上げる | `ReaderText.vue` | `font-weight: 550` |
+| opsz を確認 | `ReaderText.vue` | `font-optical-sizing: auto` が効いているか確認 |
 
 ## 避けたい変更 (根拠付き)
 
@@ -222,7 +227,9 @@ colors: {
 ## 関連ファイル
 
 - `src/plugins/vuetify.js` — テーマカラー定義 (色を変えるならここ)
-- `src/pages/ReaderPage.vue` — `.reader-line` / `:deep(b)` / `:deep(u)` 寸法・ウェイト
+- `src/components/ReaderText.vue` — `.reader-text` / `:deep(b)` / `:deep(u)` 寸法・ウェイト (本文・プレビュー共通)
+- `src/pages/ReaderPage.vue` — 教材本文側の利用箇所 (`<ReaderText :html="currentLine" />`)
+- `src/pages/HomePage.vue` — フォントサイズプレビュー側の利用箇所 (`<ReaderText html="Lorem Ipsum" />`)
 - `src/main.js` — `./assets/fonts/roboto-serif-latin.css` のインポート
 - `src/assets/fonts/roboto-serif-latin.css` — latin subset cherry-pick 済みカスタム CSS
 - `package.json` — `@fontsource-variable/roboto-serif` の依存

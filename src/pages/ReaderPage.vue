@@ -10,6 +10,7 @@ import {
   KEY_SPACE,
 } from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
+import ReaderText from '../components/ReaderText.vue'
 
 const props = defineProps({
   filename: {
@@ -116,11 +117,10 @@ function goToPage(next) {
   })
 }
 
-// 「次へ」操作の共通エントリ。最終ページから更に次へ進もうとした場合は
+// 「次へ」操作の共通エントリ。最終ページまたは コンテンツ空 の状態から更に次へ進もうとした場合は
 // HomePage に戻す。キー操作 (Space / →) と画面タップの両方から呼ばれる。
 function advanceOrExit() {
-  if (lines.value.length === 0) return
-  if (effectivePage.value >= lines.value.length - 1) {
+  if (lines.value.length === 0 || effectivePage.value >= lines.value.length - 1) {
     goHome()
     return
   }
@@ -128,7 +128,7 @@ function advanceOrExit() {
 }
 
 // 本文以外の余白 (.reader-shell の地の部分) をタップ/クリックしたときだけ
-// 次へ進める。本文 .reader-line やページ番号 .reader-progress、エラー表示
+// 次へ進める。本文 ReaderText やページ番号 .reader-progress、エラー表示
 // などを誤タップしても発火しないよう currentTarget と一致するときに限定する。
 function handleShellClick(event) {
   if (event.target !== event.currentTarget) return
@@ -187,10 +187,9 @@ useKeyboard((event) => {
       >
         この教材には表示できる行がありません。
       </p>
-      <div
+      <ReaderText
         v-else
-        class="reader-line"
-        v-html="currentLine"
+        :html="currentLine"
       />
       <p
         v-if="showProgress"
@@ -221,63 +220,10 @@ useKeyboard((event) => {
   position: relative;
 }
 
-.reader-line {
-  /*
-   * フォントサイズ調整手順
-   * - clamp(最小値, 可変値, 最大値) で指定しています。
-   * - 全体的に文字を大きく/小さくしたい場合は 3 つの値をすべて同じ比率で増減してください。
-   * - 画面幅への追従の強さを変えたい場合は中央 (vw 単位) の値だけを変更してください。
-   * - 例: 元のサイズに戻す → clamp(1.5rem, 4vw, 2.75rem)
-   *
-   * --reader-font-scale はユーザーの HomePage スライダー設定値で、
-   * src/composables/useFontScale.js が documentElement に書き込む。
-   * 既定値 1 は localStorage 未保存時のフォールバックで、CSS 変数の
-   * 第二引数 (`var(name, fallback)`) として渡している。
-   */
-  font-size: clamp(
-    calc(3rem * var(--reader-font-scale, 1)),
-    calc(8vw * var(--reader-font-scale, 1)),
-    calc(5.5rem * var(--reader-font-scale, 1))
-  );
-  line-height: 1.5;
-  width: 100%;
-  /*
-   * フォント / 配色設計の根拠と調整指針は
-   * Documents/reader-typography.md を参照。
-   * 色値はハードコードせず Vuetify テーマ変数 (src/plugins/vuetify.js) 経由。
-   */
-  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
-  font-weight: 500;
-  font-optical-sizing: auto;
-  color: rgb(var(--v-theme-readerBody));
-}
-
-/* 教材コンテンツ中の <b> 要素に対するスタイル
- * シャドーイングのアクセント母音強調用途。
- *  - 色: アンバー (赤の否定感を避けつつ黒背景で見つけやすい)
- *  - ウェイト: 700
- * 詳細は Documents/reader-typography.md を参照。 */
-.reader-line :deep(b) {
-  font-weight: 700;
-  color: rgb(var(--v-theme-readerAccent));
-}
-
-/* 教材コンテンツ中の <u> 要素に対するスタイル
- * 句のまとまりを示す補助記号。文字色は本文のまま、下線だけを強調する。
- * 詳細は Documents/reader-typography.md を参照。 */
-.reader-line :deep(u) {
-  color: inherit;
-  text-decoration-line: underline;
-  text-decoration-color: rgba(var(--v-theme-readerUnderline), 0.9);
-  text-decoration-thickness: 0.1em;
-  text-underline-offset: 0.14em;
-  text-decoration-skip-ink: none;
-}
-
 .reader-progress {
   /*
-   * 本文 (.reader-line) から視覚的に最大限離すため画面上端へ絶対配置する。
-   * フレックスフロー外に出すことで、.reader-line は .reader-shell の
+   * 本文 (ReaderText) から視覚的に最大限離すため画面上端へ絶対配置する。
+   * フレックスフロー外に出すことで、ReaderText は .reader-shell の
    * 中央配置 (justify-content: center) を維持する。
    * 文字サイズは従来通り 0.875rem を維持。
    *
