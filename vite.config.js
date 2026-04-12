@@ -4,6 +4,7 @@ import vuetify from 'vite-plugin-vuetify'
 import { fileURLToPath, URL } from 'node:url'
 import { resolveBase, basePathSegmentsCount } from './vite/resolveBase.js'
 import spaFallback404Plugin from './vite/spaFallback404Plugin.js'
+import baseRewritePlugin from './vite/baseRewritePlugin.js'
 
 const BASE = resolveBase()
 
@@ -13,6 +14,7 @@ export default defineConfig({
     vue(),
     vuetify({ autoImport: true }),
     spaFallback404Plugin({ pathSegmentsToKeep: basePathSegmentsCount(BASE) }),
+    baseRewritePlugin(),
   ],
   resolve: {
     alias: {

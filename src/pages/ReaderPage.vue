@@ -232,20 +232,21 @@ useKeyboard((event) => {
 
 <style scoped>
 .reader-shell {
+  /* dvh 未対応ブラウザ向けフォールバック。100vh はアドレスバーの出入りに
+     追従しないが、min-height が効かないよりは安全。 */
+  min-height: calc(100vh - var(--v-layout-top, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   /* 100dvh はアドレスバーの出入りに連動する動的ビューポート高さ。
-     100vh だと iOS Safari でアドレスバー表示時にコンテンツがはみ出す。 */
-  min-height: calc(100dvh - var(--v-layout-top, 0px));
+     対応ブラウザでは上の 100vh 宣言を上書きする。
+     safe-area padding は App.vue の .v-application でグローバルに掛かるため、
+     その分を差し引いて溢れを防ぐ。 */
+  min-height: calc(100dvh - var(--v-layout-top, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* safe-area-inset で notch / home indicator を避ける。
-     standalone モード (viewport-fit=cover) で有効、通常ブラウザでは 0px。 */
-  padding:
-    calc(2rem + env(safe-area-inset-top, 0px))
-    calc(10% + env(safe-area-inset-right, 0px))
-    calc(2rem + env(safe-area-inset-bottom, 0px))
-    calc(10% + env(safe-area-inset-left, 0px));
+  /* 上下は 2rem、左右は画面幅の 10% を余白として確保する。
+     safe-area padding は App.vue の .v-application でグローバルに処理済み。 */
+  padding: 2rem 10%;
   text-align: center;
   /* .reader-progress を画面上端に絶対配置するための基準 */
   position: relative;
@@ -262,8 +263,7 @@ useKeyboard((event) => {
    * クリック可能であることを示す cursor: pointer を付ける。
    */
   position: absolute;
-  /* standalone モードでステータスバーに重ならないよう safe-area を加算 */
-  top: calc(1rem + env(safe-area-inset-top, 0px));
+  top: 1rem;
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
