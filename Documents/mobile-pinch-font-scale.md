@@ -2,7 +2,7 @@
 
 `HomePage.vue` と `ReaderPage.vue` において、スマートフォンでも本文フォントサイズを素早く調整できるようにするための実装方針をまとめる。目標 UX は Google Maps のような **2 本指ピンチイン / ピンチアウトでの直接調整** だが、本アプリでは地図の pan / zoom ではなく、既存の `--reader-font-scale` を更新する形で実現する。
 
-本ドキュメントは **実装前の方針** を扱う。現状仕様は `README.md`、内部設計は `Architecture.md`、既存のフォントスケール管理は `src/composables/useFontScale.js` を参照。
+本ドキュメントは **実装方針（実装済みの設計背景）** を扱う。現状仕様は `README.md`、内部設計は `Architecture.md`、既存のフォントスケール管理は `src/composables/useFontScale.js` を参照。
 
 ## 背景
 
