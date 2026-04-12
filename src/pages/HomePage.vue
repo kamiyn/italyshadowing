@@ -16,6 +16,7 @@ import {
   FONT_SCALE_MAX,
   FONT_SCALE_STEP,
 } from '../composables/useFontScale.js'
+import ReaderText from '../components/ReaderText.vue'
 
 const router = useRouter()
 const lessons = ref([])
@@ -182,7 +183,9 @@ useKeyboard((event) => {
           表示フォントサイズ
         </h2>
         <div class="font-size-preview-box">
-          <span class="font-size-preview">Lorem Ipsum</span>
+          <ReaderText nowrap>
+            Lorem Ipsum
+          </ReaderText>
         </div>
         <!--
           aria-labelledby で h2 見出しと slider を紐付ける。これにより
@@ -261,29 +264,20 @@ useKeyboard((event) => {
 }
 
 /*
- * プレビューは ReaderPage の .reader-line と全く同じ font-size 計算式を使う。
+ * プレビューは ReaderText コンポーネントを使い、ReaderPage 本文と
+ * 全く同じ font-size 計算式・font-family・色を共有する (重複定義しない)。
  * こうすることで HomePage で見ているサイズがそのまま教材表示時のサイズになる。
- * 高倍率でフレーム外にはみ出る場合があるので overflow: hidden で両端を切る。
+ *
+ * このボックスは flex で中央寄せし、overflow: hidden を併用することで、
+ * 高 font-scale 時に内側 ReaderText の幅が画面幅を超えても左右対称に
+ * 切り落とされる (text-align ではなく flex を使う理由は、子要素 ReaderText
+ * がブロック相当の width:auto + flex-shrink:0 になっているため)。
  */
 .font-size-preview-box {
   width: 100%;
   overflow: hidden;
-  text-align: center;
+  display: flex;
+  justify-content: center;
   margin-bottom: 0.5rem;
-}
-
-.font-size-preview {
-  display: inline-block;
-  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
-  font-weight: 500;
-  font-optical-sizing: auto;
-  color: rgb(var(--v-theme-readerBody));
-  font-size: clamp(
-    calc(3rem * var(--reader-font-scale, 1)),
-    calc(8vw * var(--reader-font-scale, 1)),
-    calc(5.5rem * var(--reader-font-scale, 1))
-  );
-  line-height: 1.2;
-  white-space: nowrap;
 }
 </style>

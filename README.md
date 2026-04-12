@@ -61,12 +61,12 @@
 
 ## 教材で使える HTML 要素
 
-`lines` 内の文字列は v-html で描画されます。技術的にはほぼ任意の HTML が書けますが、教材表現として推奨し、`ReaderPage.vue` 側でスタイルを定義しているのは次の要素です。
+`lines` 内の文字列は v-html で描画されます。技術的にはほぼ任意の HTML が書けますが、教材表現として推奨し、`ReaderText` コンポーネント側でスタイルを定義しているのは次の要素です。
 
 | 要素 | 用途 | スタイル定義箇所 |
 |------|------|------------------|
-| `<b>` | 太字での強調 | `src/pages/ReaderPage.vue` の `.reader-line :deep(b)` |
-| `<u>` | 下線での強調 | `src/pages/ReaderPage.vue` の `.reader-line :deep(u)` |
+| `<b>` | 太字での強調 | `src/components/ReaderText.vue` の `.reader-text :deep(b)` |
+| `<u>` | 下線での強調 | `src/components/ReaderText.vue` の `.reader-text :deep(u)` |
 
 例:
 
