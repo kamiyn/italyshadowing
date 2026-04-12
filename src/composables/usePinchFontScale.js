@@ -76,16 +76,18 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
       const prevScale = fontScale.value
       setFontScale(nextScale)
 
-      // setFontScale() 適用後に実際の scale が変わったかどうかで
-      // 「ピンチした」とみなす。これにより setFontScale() 側の量子化・丸めが
-      // あっても pinchSeq の更新漏れを防ぐ。
+      // click ガード用の「ピンチ成立」は次のどちらかで立てる。
+      // 1. 実際に scale が変わった
+      //    useFontScale() は 0.05 刻みで量子化するため、scale=2.0 付近では
+      //    約 1.25% の距離変化でも 1 step 分の更新が起こり得る。距離閾値だけに
+      //    依存すると、この小さいが実際には反映されたピンチを見落とす。
+      // 2. 2 本指距離の変化が 5% を超えた
+      //    scale が min/max に張り付いて clamp で値が変わらない場合でも、
+      //    明確なピンチ操作の直後 click は抑止したいので raw ratio も見る。
       //
-      // 既知の制約: fontScale が min/max に到達している状態でさらに同方向へ
-      // ピンチした場合、clamp により値が変わらず didPinch=false のままになる。
-      // この場合 click ガードが効かないが、スケールが実際に動いていないため
-      // ユーザーが「操作した」と認識しにくく、誤タップの実害は小さいと判断し
-      // 許容する。
-      if (fontScale.value !== prevScale) {
+      // これにより、量子化丸めによる小さな実更新の取りこぼしと、
+      // min/max 張り付き時の click ガード抜けを両方防ぐ。
+      if (fontScale.value !== prevScale || Math.abs(ratio - 1) > 0.05) {
         didPinch = true
       }
     }

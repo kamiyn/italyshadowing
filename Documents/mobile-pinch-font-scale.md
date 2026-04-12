@@ -71,7 +71,7 @@ nextScale = startScale * (currentDistance / startDistance)
 
 方針:
 
-- pinch 中に `setFontScale()` 適用後に実際の scale が変わったら `didPinch = true` をフラグとして記録する。fontScale が min/max に到達済みで clamp により値が変わらない場合は `didPinch` は立たず click ガードも効かないが、スケールが動いていない操作での誤タップは実害が小さいため許容する
+- pinch 中に `setFontScale()` 適用後の `fontScale` 実変化、または 2 本指距離の閾値超過のどちらかで `didPinch = true` を記録する。前者は 0.05 刻み量子化により高倍率側で 5% 未満の小さなピンチでも実際の 1 step 更新が起こり得るためその取りこぼしを防ぎ、後者は `fontScale` が min/max に到達済みで clamp により値が変わらない場合でも直後の合成 click ガードを有効に保つために必要
 - ジェスチャー終了 (`pointerup` / `pointercancel`) 時に `didPinch` が true なら `pinchSeq` をインクリメントし、`didPinch` をリセットする。これにより 400ms のガード期間が必ず「指を離した瞬間」から始まる
 - `consumeRecentPinch()` は `pinchSeq !== pinchSeqSettled` (= 最近ピンチした) なら true を返し、即座に両者を一致させてガードを解除する (1 回消費)
 - 誰も消費しなかった場合は 400ms 後に `refDebounced` が追いついて自動解除される (安全弁)
