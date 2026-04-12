@@ -130,9 +130,9 @@ switch (event.key) {
 }
 ```
 
-## Vuetify の色指定はテーマ変数を経由する
+## 色指定はテーマ変数を経由する
 
-`<style scoped>` 内で色を指定するときは、ハードコード (`#000`, `rgba(0,0,0,.6)`) ではなく Vuetify テーマ変数を使います。ダークモード / テーマ切り替え時に追従します。
+`<style scoped>` 内で色を指定するときは、ハードコード (`#000`, `rgba(0,0,0,.6)`) ではなく `src/assets/theme.css` で定義したテーマ変数を使います。テーマ切り替え時に追従します。
 
 ```css
 /* 避ける */
@@ -143,7 +143,7 @@ color: rgba(var(--v-theme-on-background), 0.6);
 color: rgb(var(--v-theme-error));
 ```
 
-主要変数: `--v-theme-background`, `--v-theme-on-background`, `--v-theme-surface`, `--v-theme-on-surface`, `--v-theme-error`。
+主要変数: `--v-theme-background`, `--v-theme-on-background`, `--v-theme-surface`, `--v-theme-on-surface`, `--v-theme-error`。変数の定義は `src/assets/theme.css` を参照。
 
 ## サブパス配備の URL は `import.meta.env.BASE_URL` 起点で組み立てる
 

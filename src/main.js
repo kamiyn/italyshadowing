@@ -1,7 +1,10 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { router } from './router/index.js'
-import { vuetify } from './plugins/vuetify.js'
+
+// グローバルテーマ (CSS カスタムプロパティ + ミニマルリセット)。
+// Vuetify が自動生成していた --v-theme-* 変数を自前で定義する。
+import './assets/theme.css'
 
 // Reader 本文用フォントを npm パッケージ経由でビルドに埋め込む。
 // `roboto-serif-latin.css` は @fontsource-variable/roboto-serif/standard.css
@@ -24,4 +27,4 @@ import './assets/fonts/roboto-serif-latin.css'
 // 文字が見えてからユーザー設定値に切り替わる FOUC が出る。
 import './composables/useFontScale.js'
 
-createApp(App).use(router).use(vuetify).mount('#app')
+createApp(App).use(router).mount('#app')

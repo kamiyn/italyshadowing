@@ -42,7 +42,7 @@ defineProps({
  *
  * フォント / 配色設計の根拠と調整指針は
  * Documents/reader-typography.md を参照。
- * 色値はハードコードせず Vuetify テーマ変数 (src/plugins/vuetify.js) 経由。
+ * 色値はハードコードせずテーマ変数 (src/assets/theme.css) 経由。
  */
 .reader-text {
   font-size: clamp(
