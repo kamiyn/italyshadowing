@@ -146,7 +146,9 @@ function advanceOrExit() {
 function handleShellClick(event) {
   if (event.target !== event.currentTarget) return
   // ピンチ直後にブラウザが合成 click を発火すると誤って次ページへ進む。
-  // hasRecentPinch は pinchSeq と refDebounced の不一致で 400ms 間 true になる。
+  // hasRecentPinch は pinchSeq の直近更新を refDebounced で約 400ms 遅延させている間 true。
+  // そのため「最後の更新から約 400ms」のガードであり、指を止めて保持した場合などは
+  // ピンチ中/直後でも false になり得る。
   if (hasRecentPinch.value) return
   advanceOrExit()
 }
