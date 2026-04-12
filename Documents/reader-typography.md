@@ -6,8 +6,7 @@ HomePage フォントサイズプレビュー) における
 
 このコンポーネントは ReaderPage 本文と HomePage プレビューで共通利用される
 ことを前提に設計されており、両画面で同じ font-family / font-weight /
-clamp 計算式 / 色を共有する。レイアウト差異の有無にかかわらず、
-タイポグラフィそのものは同一である。
+clamp 計算式 / 色 / 折り返し挙動を共有する。
 
 ## 設計の前提
 
@@ -230,7 +229,7 @@ colors: {
 - `src/plugins/vuetify.js` — テーマカラー定義 (色を変えるならここ)
 - `src/components/ReaderText.vue` — `.reader-text` / `:deep(b)` / `:deep(u)` 寸法・ウェイト (本文・プレビュー共通)
 - `src/pages/ReaderPage.vue` — 教材本文側の利用箇所 (`<ReaderText :html="currentLine" />`)
-- `src/pages/HomePage.vue` — フォントサイズプレビュー側の利用箇所 (`<ReaderText nowrap>`)
+- `src/pages/HomePage.vue` — フォントサイズプレビュー側の利用箇所 (`<ReaderText html="Lorem Ipsum" />`)
 - `src/main.js` — `./assets/fonts/roboto-serif-latin.css` のインポート
 - `src/assets/fonts/roboto-serif-latin.css` — latin subset cherry-pick 済みカスタム CSS
 - `package.json` — `@fontsource-variable/roboto-serif` の依存
