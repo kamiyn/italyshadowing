@@ -96,7 +96,7 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
   function bindPinchTarget(el) {
     if (!el) return
     boundEl = el
-    // touch-action は CSS で付けるが、念のため JS からも設定する
+    // Pointer Events の挙動を安定させるため、この composable で touch-action を明示設定する
     el.style.touchAction = 'pan-x pan-y'
     el.addEventListener('pointerdown', onPointerDown)
     el.addEventListener('pointermove', onPointerMove)
