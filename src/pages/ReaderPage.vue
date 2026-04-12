@@ -140,11 +140,9 @@ function advanceOrExit() {
   goToPage(effectivePage.value + 1)
 }
 
-// 本文以外の余白 (.reader-shell の地の部分) をタップ/クリックしたときだけ
-// 次へ進める。本文 ReaderText やページ番号 .reader-progress、エラー表示
-// などを誤タップしても発火しないよう currentTarget と一致するときに限定する。
-function handleShellClick(event) {
-  if (event.target !== event.currentTarget) return
+// .reader-shell (本文含む) をタップ/クリックしたとき次へ進める。
+// .reader-progress は @click.stop で伝播を止めるため、ここには届かない。
+function handleShellClick() {
   // ピンチ直後にブラウザが合成 click を発火すると誤って次ページへ進む。
   // consumeRecentPinch() は直後の 1 回だけ true を返しガードを解除する。
   if (consumeRecentPinch()) return
