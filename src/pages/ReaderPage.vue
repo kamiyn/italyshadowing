@@ -121,7 +121,7 @@ function goToPage(next) {
 function advanceOrExit() {
   if (lines.value.length === 0) return
   if (effectivePage.value >= lines.value.length - 1) {
-    router.push('/')
+    goHome()
     return
   }
   goToPage(effectivePage.value + 1)
