@@ -19,6 +19,8 @@ import {
 import { usePinchFontScale } from '../composables/usePinchFontScale.js'
 import ReaderText from '../components/ReaderText.vue'
 
+const commitHash = __COMMIT_HASH__
+
 const router = useRouter()
 const lessons = ref([])
 const selectedIndex = ref(0)
@@ -137,7 +139,10 @@ useKeyboard((event) => {
   <v-main>
     <v-container class="home-container">
       <h1 class="home-title">
-        Italy Shadowing
+        <span>Italy Shadowing</span>
+        <small class="home-title-hash">
+          {{ commitHash }}
+        </small>
       </h1>
       <p
         v-if="error"
@@ -233,8 +238,19 @@ useKeyboard((event) => {
 }
 
 .home-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
   font-size: 1.75rem;
   margin-bottom: 1rem;
+}
+
+.home-title-hash {
+  color: rgba(var(--v-theme-on-background), 0.55);
+  font-size: 0.75rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
 }
 
 .lesson-list {
