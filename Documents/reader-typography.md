@@ -19,82 +19,45 @@ clamp 計算式 / 色 / 折り返し挙動を共有する。
 
 ## フォント供給方法
 
-Roboto Serif は `@fontsource-variable/roboto-serif` を `package.json` の依存に
-追加し、`src/main.js` で
+外部フォントファイルを使わず、**OS 標準のセリフフォントのみ** を使用する。
+`package.json` に `@fontsource-variable/roboto-serif` の依存はなく、`woff2` ファイルも
+バンドルされない。フォントは各デバイスのシステムフォントとして既にインストール済みである
+ため、ネットワーク転送量もゼロになる。
 
-```js
-import './assets/fonts/roboto-serif-latin.css'
+CSS の `font-family` は以下のフォールバックスタックで指定する:
+
+```css
+font-family: ui-serif, 'New York', 'Noto Serif', Georgia, Cambria, serif;
 ```
 
-としてインポートする。`roboto-serif-latin.css` は本リポジトリ内のカスタム CSS
-で、`@fontsource-variable/roboto-serif/standard.css` の **latin subset の
-`@font-face` ブロックだけを cherry-pick** したもの。Vite が `url()` を解決し、
-`woff2` ファイルを `dist/assets/` にハッシュ付きでバンドルする。
-**Google Fonts CDN への外部読み込みは行わない** ため、外部 CDN への依存を避けられる。
-フォントファイルはアプリのビルド成果物に含まれるため、オフラインや閉域環境でも表示しやすい。
+### フォールバックスタックの解説
 
-CSS の `font-family` は `'Roboto Serif Variable'` で参照する (`Variable` サフィックスは fontsource の慣例)。
-ローカルにシステムインストールされた `Roboto Serif` を優先したい場合に備えて、
-`'Roboto Serif Variable', 'Roboto Serif', serif` のように 2 段フォールバックする。
-
-### 軸の選択 (`standard` 軸変種を使う理由)
-
-`@fontsource-variable/roboto-serif` には軸セット別の CSS が用意されている:
-
-| ファイル | 含む軸 | latin subset 単体ファイルサイズ |
+| エントリ | 解決先 | 備考 |
 |---|---|---|
-| `wght.css` | wght (weight) | 66 KB |
-| `opsz.css` | opsz (optical size) | 147 KB |
-| **`standard.css`** | **wght + wdth + opsz** | **379 KB** |
-| `full.css` | wght + wdth + opsz + grad | 574 KB |
+| `ui-serif` | Apple → New York / Windows (Chrome/Edge) → Georgia 相当 / Android → システム既定 serif | CSS Fonts Level 4 のシステム UI serif キーワード |
+| `'New York'` | iOS / macOS | `ui-serif` 非対応ブラウザ向け Apple 明示指定。iOS 13 / macOS 10.15 以降標準搭載 |
+| `'Noto Serif'` | Android | Google 標準 serif。Android の `serif` ジェネリックの実体 |
+| `Georgia` | 全プラットフォーム | web-safe serif として全 OS に存在する安全網 |
+| `Cambria` | Windows | 本文組みに適した設計の Windows serif |
+| `serif` | ジェネリック最終フォールバック | — |
 
-`.reader-text` では `font-weight: 500/700` (wght) と `font-optical-sizing: auto`
-(opsz) の両方を使うため、両軸を含む **standard 軸変種** が必要。`wdth` は使って
-いないが標準セットに含まれるためそのまま受け入れる。
+### font-weight: 500 について
 
-本リポジトリでは `standard.css` を直接 import せず、その latin block だけを
-`src/assets/fonts/roboto-serif-latin.css` にコピーして使う運用にしている (理由は
-次節)。
+- **New York** (ui-serif on Apple): 可変フォント (wght 軸)、500 が有効
+- **Noto Serif** (Android): 可変フォント、500 が有効
+- **Georgia / Cambria** (Windows): 400 / 700 のみ。500 は 400 として描画されるが視覚上許容範囲
 
-### subset の絞り込み (latin のみ)
+### font-optical-sizing: auto について
 
-`@fontsource-variable/roboto-serif/standard.css` を直接 import すると、
-cyrillic / cyrillic-ext / vietnamese / latin-ext / latin の **5 subset 全ての
-`@font-face` 宣言** が読み込まれる。各 `@font-face` は `unicode-range` で振り分けて
-あるためブラウザは未使用 subset の `woff2` をダウンロードしないが、Vite はビルド
-時に CSS の `url()` を走査して **参照されている `woff2` を全て `dist/` にコピー
-する**。結果として `dist/assets/` に約 1 MB 分の使われない非 latin フォントが
-残ってしまう。
-
-本アプリの目的はイタリア語のシャドーイングであり、Italian の発音記号
-(à è é ì í ò ó ù ú など、U+00E0-U+00FA) は **latin subset の `unicode-range`
-`U+0000-00FF` に完全に含まれる**。cyrillic / latin-ext / vietnamese は表示に使われ
-ない。
-
-このため `src/assets/fonts/roboto-serif-latin.css` を以下の方針で作成している:
-
-- パッケージ標準 `standard.css` の **latin ブロック (約 1 つの `@font-face`) だけ
-  を cherry-pick** して写し取る
-- `unicode-range` / weight / stretch / `font-display` 等は upstream と完全一致
-  させる
-- `woff2` への参照は bare specifier
-  (`@fontsource-variable/roboto-serif/files/roboto-serif-latin-standard-normal.woff2`)
-  で書く。Vite が package exports 経由で resolve し、`dist/assets/` にハッシュ付き
-  でコピーする
-
-これにより `dist/assets/` に出力される woff2 は latin の 1 ファイル (約 379 KB)
-だけになる (削減量: 約 688 KB / 65%)。
-
-**パッケージ更新時の注意**: `@fontsource-variable/roboto-serif` を更新した際は
-上流の `standard.css` の latin block と
-`src/assets/fonts/roboto-serif-latin.css` の差分を確認し、`unicode-range` 等が
-変わっていれば追従する。
+- **New York**: opsz 軸をネイティブサポート。大サイズで字形が適切に調整される
+- **Noto Serif**: opsz 軸のサポートは実装依存だが、プロパティは無害に無視される
+- **Georgia / Cambria**: 静的フォントのためプロパティは無視される (エラーなし)
 
 ## 結論 (推奨初期値)
 
 | 要素 | プロパティ | 値 | 役割 |
 |---|---|---|---|
-| 本文 | `font-family` | `'Roboto Serif Variable', 'Roboto Serif', serif` | UD ではないがスクリーン最適化された serif。Roboto 系で `I` と `l` が判別可能 |
+| 本文 | `font-family` | `ui-serif, 'New York', 'Noto Serif', Georgia, Cambria, serif` | OS 標準 serif を優先。外部フォントファイル不要でバンドルサイズ削減 |
 | 本文 | `font-weight` | `500` (medium) | 黒背景で 400 だと骨格が弱く見えるため 1 段太め |
 | 本文 | `color` | `rgb(var(--v-theme-readerBody))` (`#F2F0EA`) | 純白だとコントラスト過剰。暖色寄りオフホワイト |
 | 本文 | `font-optical-sizing` | `auto` | variable font の opsz 軸を使い、大サイズで線が痩せないようにする |
@@ -230,7 +193,4 @@ colors: {
 - `src/components/ReaderText.vue` — `.reader-text` / `:deep(b)` / `:deep(u)` 寸法・ウェイト (本文・プレビュー共通)
 - `src/pages/ReaderPage.vue` — 教材本文側の利用箇所 (`<ReaderText :html="currentLine" />`)
 - `src/pages/HomePage.vue` — フォントサイズプレビュー側の利用箇所 (`<ReaderText html="Lorem Ipsum" />`)
-- `src/main.js` — `./assets/fonts/roboto-serif-latin.css` のインポート
-- `src/assets/fonts/roboto-serif-latin.css` — latin subset cherry-pick 済みカスタム CSS
-- `package.json` — `@fontsource-variable/roboto-serif` の依存
 - `CLAUDE.md` — 「Vuetify の色指定はテーマ変数を経由する」規約
