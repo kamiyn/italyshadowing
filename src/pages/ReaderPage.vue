@@ -199,7 +199,7 @@ useKeyboard((event) => {
         tabindex="0"
         @click.stop="goHome"
         @keydown.enter.stop.prevent="goHome"
-        @keydown.space.stop.prevent="goHome"
+        @keyup.space.stop.prevent="goHome"
       >
         {{ progressLabel }}
       </p>
