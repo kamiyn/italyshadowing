@@ -1,4 +1,5 @@
 <script setup>
+/* global __COMMIT_HASH__ */
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchIndex } from '../lib/dataClient.js'
