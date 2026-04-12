@@ -68,14 +68,14 @@ nextScale = startScale * (currentDistance / startDistance)
 
 ### 3. ピンチ後の誤タップ遷移を抑止する
 
-`ReaderPage` では、ピンチ後にブラウザが合成 click を発火すると、意図せず次ページへ進む恐れがある。これを避けるため、ジェスチャー終了直後は短時間だけ「直前操作は pinch だった」状態を保持し、次の click を 1 回だけ無視する。
+`ReaderPage` では、ピンチ後にブラウザが合成 click を発火すると、意図せず次ページへ進む恐れがある。これを避けるため、ピンチとして成立した操作の直後は `hasRecentPinch` を短時間 `true` に保ち、その保持期間中に発生した `click` は `handleShellClick()` で無視する。
 
 方針:
 
-- pinch 開始で `isPinching=true`
-- pinch 中に距離変化が閾値を超えたら `didPinch=true`
-- pinch 終了後、`didPinch` が立っている間は `handleShellClick()` を early return
-- 無視した直後または短時間経過後に `didPinch=false` へ戻す
+- pinch 中に距離変化が閾値を超えたら、「直近で pinch があった」ことを表す元の ref を更新する
+- `hasRecentPinch` はその ref を `refDebounced` で短時間保持した値とする
+- `handleShellClick()` では `hasRecentPinch` が `true` の間は early return して、ページ送りを発生させない
+- click 無視の解除は `didPinch` の手動リセットではなく、debounce 時間の経過により `hasRecentPinch` が `false` へ戻ることで行う
 
 ### 4. 永続化はジェスチャー終了時に 1 回だけ行う
 
