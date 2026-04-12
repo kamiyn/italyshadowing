@@ -113,6 +113,7 @@
 
 - [`Documents/Architecture.md`](Documents/Architecture.md) — 現状の内部設計 (画面構成・データ設計・処理フロー・責務分割)
 - [`Documents/Plan.md`](Documents/Plan.md) — 初期プランニングメモ (実装着手前の要件スケッチ。アーカイブ用途)
+- [`Documents/mobile-pinch-font-scale.md`](Documents/mobile-pinch-font-scale.md) — モバイル向けピンチフォントサイズ調整の実装方針
 - [`Documents/Development.md`](Documents/Development.md) — 開発手順 (技術構成・npm スクリプト・デバッグ起動・ビルド前処理)
 - [`Documents/Deployment.md`](Documents/Deployment.md) — GitHub Pages デプロイ手順 (初回セットアップ・自動デプロイ・手動デプロイ)
 - `Documents/ADR-*.md` — Architecture Decision Records (個別の実装判断と背景)

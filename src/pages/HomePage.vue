@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { fetchIndex } from '../lib/dataClient.js'
 import {
@@ -16,6 +16,7 @@ import {
   FONT_SCALE_MAX,
   FONT_SCALE_STEP,
 } from '../composables/useFontScale.js'
+import { usePinchFontScale } from '../composables/usePinchFontScale.js'
 import ReaderText from '../components/ReaderText.vue'
 
 const router = useRouter()
@@ -45,6 +46,12 @@ const isEmptyState = computed(() => !isLoading.value && !error.value && !hasLess
 const showHint = computed(() => !error.value && !isLoading.value && hasLessons.value)
 
 const { fontScale, setFontScale, persistFontScale } = useFontScale()
+
+const previewBoxRef = ref(null)
+const { bindPinchTarget } = usePinchFontScale({ setFontScale, persistFontScale, fontScale })
+onMounted(() => {
+  if (previewBoxRef.value) bindPinchTarget(previewBoxRef.value)
+})
 // スライダーの thumb-label に出すパーセント表記。テンプレート側に算術を
 // 書かないため computed に寄せる。
 const fontScalePercent = computed(() => `${Math.round(fontScale.value * 100)}%`)
@@ -211,7 +218,10 @@ useKeyboard((event) => {
         </v-slider>
       </section>
     </v-container>
-    <div class="font-size-preview-box">
+    <div
+      ref="previewBoxRef"
+      class="font-size-preview-box"
+    >
       <ReaderText html="Lorem Ipsum" />
     </div>
   </v-main>
