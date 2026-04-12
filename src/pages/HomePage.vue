@@ -334,6 +334,10 @@ useKeyboard((event) => {
   outline: none;
 }
 
+.font-scale-slider:focus-visible {
+  outline: 2px solid rgba(var(--v-theme-on-background), 0.9);
+  outline-offset: 4px;
+}
 .font-scale-slider::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 2px;
