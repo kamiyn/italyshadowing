@@ -11,7 +11,7 @@ export default function baseRewritePlugin() {
     },
     transformIndexHtml: {
       order: 'pre',
-      handler(html, ctx) {
+      handler(html) {
         return html.replace(
           /(<link\s[^>]*(?:rel="(?:manifest|apple-touch-icon)")[^>]*\shref=")([^"]+)(")/g,
           (match, before, href, after) => {
