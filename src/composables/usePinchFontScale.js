@@ -43,25 +43,25 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
     return Math.sqrt(dx * dx + dy * dy)
   }
 
+  function capturePointer(pointerId) {
+    if (!boundEl) return
+    if (boundEl.hasPointerCapture(pointerId)) return
+    boundEl.setPointerCapture(pointerId)
+  }
+
   function onPointerDown(e) {
     // 2 本まで追跡する
     if (pointers.size >= 2) return
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+    // 各 pointer は自身の pointerdown 中にだけ capture する。
+    // これにより active pointer の前提が明確になり、try/catch に頼らない。
+    capturePointer(e.pointerId)
 
     if (pointers.size === 2) {
       // ピンチ開始
       isPinching.value = true
       startDistance = getDistance()
       startScale = fontScale.value
-      // pointer を要素にキャプチャしてドラッグ中に外れても追跡を続ける
-      if (boundEl) {
-        for (const id of pointers.keys()) {
-          try {
-            boundEl.setPointerCapture(id)
-          }
-          catch { /* ignore */ }
-        }
-      }
     }
   }
 
@@ -102,7 +102,12 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
       }
     }
 
-    // 残りの pointer もクリアする (片方だけ残ると中途半端な状態になる)
+    // isPinching ブロック内外どちらでも pointers を全クリアする。
+    // 2 本指ダウン → 1 本目 up → isPinching ブロックで状態リセット →
+    // 2 本目 up → pointers は既に空なので no-op。
+    // ブロック内だけで clear すると、isPinching=false の経路 (3 本目の指が
+    // 途中で触れた場合など) で古いエントリが残る可能性があるため、
+    // 常にクリアして安全側に倒す。
     pointers.clear()
   }
 
@@ -115,6 +120,12 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
    * (= 最近ピンチが完了した) なら true を返し、pinchSeq を settled に
    * 合わせて即座にガードを解除する (1 回消費)。
    * 誰も消費しなかった場合は 400ms 後に refDebounced が追いついて自動解除。
+   *
+   * 注意: pinchSeq を settled の値に巻き戻すため、カウンターは単調増加では
+   * なくなる。consume 直後に新しいピンチが起きると pinchSeq が
+   * (旧 settled + 1) になり、さらに consume すると再び巻き戻る。
+   * 動作上は「不一致 = ガード中」の判定に影響しないが、pinchSeq の絶対値に
+   * 依存するロジックを追加する場合はこの挙動に注意すること。
    */
   function consumeRecentPinch() {
     if (pinchSeq.value === pinchSeqSettled.value) return false
