@@ -30,7 +30,6 @@
 
 ## 非目標
 
-- ブラウザ全体のページズームを禁止すること
 - Reader 本文の pan (平行移動) や任意位置ズームを実装すること
 - PC トラックパッドの 2 本指ピンチを今回の主対象にすること
 - `ReaderPage` に常時表示のスライダー UI を追加すること
@@ -97,7 +96,7 @@ nextScale = startScale * (currentDistance / startDistance)
 - 2 点間距離の計算
 - pinch 開始 / 更新 / 終了の状態管理
 - `setFontScale()` / `persistFontScale()` 呼び出し
-- 「今回の操作で実際に pinch が成立したか」のフラグ提供
+- 「直近で pinch が成立したか」を示す reactive フラグの提供
 
 公開 API のイメージ:
 
@@ -105,14 +104,23 @@ nextScale = startScale * (currentDistance / startDistance)
 const {
   bindPinchTarget,
   isPinching,
-  consumeRecentPinch,
+  hasRecentPinch,
 } = usePinchFontScale({
   setFontScale,
   persistFontScale,
+  fontScale,
 })
 ```
 
-`ReaderPage` 側は `consumeRecentPinch()` を `handleShellClick()` のガードに使えるようにする。
+`ReaderPage` 側は `hasRecentPinch.value` を `handleShellClick()` のガードに使う。
+
+```js
+function handleShellClick(event) {
+  if (event.target !== event.currentTarget) return
+  if (hasRecentPinch.value) return
+  advanceOrExit()
+}
+```
 
 ### 2. Pointer Events を第一候補にする
 
@@ -128,16 +136,14 @@ const {
 
 ### 3. `touch-action` は必要最小限の領域にだけ付ける
 
-カスタムピンチとブラウザ既定のページズームが競合する可能性があるため、対象領域では `touch-action` を明示する。ただし広く掛けすぎると通常スクロールを壊す。
+カスタムピンチとブラウザ既定のページズームが競合するため、対象領域では `touch-action: pan-x pan-y` を設定してネイティブ pinch-zoom を抑止する。これはトレードオフとして許容する — 対象領域上ではブラウザのアクセシビリティズーム (ピンチによるページ拡大) が効かなくなるが、本アプリ自体がフォントサイズ調整機能を提供しているため代替手段があると判断した。
 
 方針:
 
 - `HomePage` では `font-size-preview-box` のみ対象にする
 - `ReaderPage` では `reader-shell` を対象にする
 - グローバル (`body`, `html`) には適用しない
-- `meta viewport` に `user-scalable=no` は入れない
-
-本アプリの目的は「本文フォントの調整」であり、「OS / ブラウザ標準のアクセシビリティズームを無効化すること」ではないためである。
+- `meta viewport` に `user-scalable=no` は入れない (ブラウザ UI からのズームは残す)
 
 ### 4. watch を増やさず、明示的なイベント入口から更新する
 
