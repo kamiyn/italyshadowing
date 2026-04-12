@@ -124,4 +124,5 @@
 - [`Documents/pwa-standalone.md`](Documents/pwa-standalone.md) — PWA standalone モードと iOS Safari 全画面表示の設計
 - [`Documents/Development.md`](Documents/Development.md) — 開発手順 (技術構成・npm スクリプト・デバッグ起動・ビルド前処理)
 - [`Documents/Deployment.md`](Documents/Deployment.md) — GitHub Pages デプロイ手順 (初回セットアップ・自動デプロイ・手動デプロイ)
+- [`Documents/branch-protection.md`](Documents/branch-protection.md) — main ブランチ保護ルール (GitHub Rulesets)
 - `Documents/ADR-*.md` — Architecture Decision Records (個別の実装判断と背景)
