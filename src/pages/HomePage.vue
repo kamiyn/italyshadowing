@@ -182,12 +182,11 @@ useKeyboard((event) => {
         >
           表示フォントサイズ
         </h2>
-        <div class="font-size-preview-box">
-          <ReaderText nowrap>
-            Lorem Ipsum
-          </ReaderText>
-        </div>
         <!--
+          slider はプレビューより上に置く。モバイル OS (iPhone のホーム
+          インジケータ等) が画面最下部に割り当てているシステムジェスチャーと
+          slider の thumb ドラッグが干渉するのを避けるため、最下段は非対話
+          要素である preview-box が担当する。
           aria-labelledby で h2 見出しと slider を紐付ける。これにより
           スクリーンリーダーで slider にフォーカスした際「表示フォントサイズ
           スライダー 現在値 …」のように読み上げられ、何を調整するスライダー
@@ -210,6 +209,11 @@ useKeyboard((event) => {
             {{ fontScalePercent }}
           </template>
         </v-slider>
+        <div class="font-size-preview-box">
+          <ReaderText nowrap>
+            Lorem Ipsum
+          </ReaderText>
+        </div>
       </section>
     </v-container>
   </v-main>
@@ -278,6 +282,6 @@ useKeyboard((event) => {
   overflow: hidden;
   display: flex;
   justify-content: center;
-  margin-bottom: 0.5rem;
+  margin-top: 0.5rem;
 }
 </style>
