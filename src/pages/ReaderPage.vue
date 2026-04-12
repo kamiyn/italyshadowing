@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchLesson } from '../lib/dataClient.js'
 import {
@@ -10,6 +10,8 @@ import {
   KEY_SPACE,
 } from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
+import { useFontScale } from '../composables/useFontScale.js'
+import { usePinchFontScale } from '../composables/usePinchFontScale.js'
 import ReaderText from '../components/ReaderText.vue'
 
 const props = defineProps({
@@ -21,6 +23,14 @@ const props = defineProps({
 
 const route = useRoute()
 const router = useRouter()
+
+const { fontScale, setFontScale, persistFontScale } = useFontScale()
+const readerShellRef = ref(null)
+const { bindPinchTarget, consumeRecentPinch } = usePinchFontScale({
+  setFontScale,
+  persistFontScale,
+  fontScale,
+})
 const lesson = ref(null)
 const error = ref(null)
 
@@ -56,7 +66,10 @@ async function load(name) {
   }
 }
 
-onMounted(() => load(props.filename))
+onMounted(() => {
+  load(props.filename)
+  if (readerShellRef.value) bindPinchTarget(readerShellRef.value)
+})
 watch(() => props.filename, name => load(name))
 onUnmounted(() => {
   if (currentController) {
@@ -132,6 +145,9 @@ function advanceOrExit() {
 // などを誤タップしても発火しないよう currentTarget と一致するときに限定する。
 function handleShellClick(event) {
   if (event.target !== event.currentTarget) return
+  // ピンチ直後にブラウザが合成 click を発火すると誤って次ページへ進む。
+  // consumeRecentPinch() が true を返す間は 1 回だけ click を無視する。
+  if (consumeRecentPinch()) return
   advanceOrExit()
 }
 
@@ -166,6 +182,7 @@ useKeyboard((event) => {
 <template>
   <v-main>
     <div
+      ref="readerShellRef"
       class="reader-shell"
       @click="handleShellClick"
     >
