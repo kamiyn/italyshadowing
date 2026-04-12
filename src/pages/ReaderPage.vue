@@ -232,13 +232,20 @@ useKeyboard((event) => {
 
 <style scoped>
 .reader-shell {
-  min-height: calc(100vh - var(--v-layout-top, 0px));
+  /* 100dvh はアドレスバーの出入りに連動する動的ビューポート高さ。
+     100vh だと iOS Safari でアドレスバー表示時にコンテンツがはみ出す。 */
+  min-height: calc(100dvh - var(--v-layout-top, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  /* 上下は 2rem、左右は画面幅の 10% を余白として確保する */
-  padding: 2rem 10%;
+  /* safe-area-inset で notch / home indicator を避ける。
+     standalone モード (viewport-fit=cover) で有効、通常ブラウザでは 0px。 */
+  padding:
+    calc(2rem + env(safe-area-inset-top, 0px))
+    calc(10% + env(safe-area-inset-right, 0px))
+    calc(2rem + env(safe-area-inset-bottom, 0px))
+    calc(10% + env(safe-area-inset-left, 0px));
   text-align: center;
   /* .reader-progress を画面上端に絶対配置するための基準 */
   position: relative;
@@ -255,7 +262,8 @@ useKeyboard((event) => {
    * クリック可能であることを示す cursor: pointer を付ける。
    */
   position: absolute;
-  top: 1rem;
+  /* standalone モードでステータスバーに重ならないよう safe-area を加算 */
+  top: calc(1rem + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   margin: 0;
