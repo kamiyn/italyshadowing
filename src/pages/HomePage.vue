@@ -171,7 +171,11 @@ useKeyboard((event) => {
           v-for="(lesson, i) in lessons"
           :key="lesson.filename"
           :class="['lesson-item', { active: i === selectedIndex }]"
+          role="button"
+          tabindex="0"
           @click="selectAndOpen(i)"
+          @keydown.enter.prevent="selectAndOpen(i)"
+          @keydown.space.prevent="selectAndOpen(i)"
         >
           <div class="lesson-item-title">
             {{ lesson.title }}
