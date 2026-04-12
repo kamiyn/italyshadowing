@@ -41,10 +41,16 @@ import { refDebounced } from '@vueuse/core'
 // 不一致の間 = 「最近アクションがあった」期間
 const seq = ref(0)
 const seqSettled = refDebounced(seq, 400)
-const hasRecent = computed(() => seq.value !== seqSettled.value)
 
-// アクション発火時
+// アクション完了時にインクリメント
 seq.value++
+
+// 1 回消費型ガード: 不一致なら true を返し、即座に一致させて解除
+function consumeRecent() {
+  if (seq.value === seqSettled.value) return false
+  seq.value = seqSettled.value
+  return true
+}
 ```
 
 ### `setTimeout` を使ってよいケース

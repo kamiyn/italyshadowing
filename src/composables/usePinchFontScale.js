@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { refDebounced } from '@vueuse/core'
 
 // 2 本指ピンチジェスチャーで fontScale を調整する composable。
@@ -8,17 +8,23 @@ import { refDebounced } from '@vueuse/core'
 // persistFontScale() を 1 回だけ呼ぶ。
 //
 // 呼び出し側は bindPinchTarget(el) で対象要素を接続し、
-// hasRecentPinch で直後の誤タップ抑止を判定できる。
+// consumeRecentPinch() で直後の誤タップを 1 回だけ抑止できる。
 
 export function usePinchFontScale({ setFontScale, persistFontScale, fontScale }) {
   const isPinching = ref(false)
 
-  // ピンチが成立するたびにインクリメントするカウンター。refDebounced で
-  // 400ms 遅延の追随版を作り、両者が不一致の間 = 「最近ピンチした」期間。
-  // setTimeout / clearTimeout の手動管理を排除し、宣言的に表現する。
+  // ピンチ成立フラグ。pointermove 中に距離変化が閾値を超えたら true にし、
+  // ジェスチャー終了 (pointerup/pointercancel) 時に pinchSeq をインクリメント
+  // してからリセットする。こうすることで、ピンチ後に指を止めて 400ms 以上保持
+  // してから離した場合でも、ガード期間が必ず「指を離した瞬間」から始まる。
+  let didPinch = false
+
+  // ジェスチャー終了ごとにインクリメントするカウンター。refDebounced で
+  // 400ms 遅延の追随版を作り、両者が不一致の間 = 「最近ピンチが完了した」期間。
+  // consumeRecentPinch() で 1 回消費すると即座に一致させてガードを解除する。
+  // 誰も消費しなかった場合は 400ms 後に refDebounced が追いついて自動解除される。
   const pinchSeq = ref(0)
   const pinchSeqSettled = refDebounced(pinchSeq, 400)
-  const hasRecentPinch = computed(() => pinchSeq.value !== pinchSeqSettled.value)
 
   // 追跡中の 2 本の pointer
   const pointers = new Map()
@@ -68,9 +74,10 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
       const nextScale = startScale * ratio
       setFontScale(nextScale)
 
-      // 距離変化が閾値を超えたら「実際にピンチした」とみなす
+      // 距離変化が閾値を超えたら「実際にピンチした」とみなす。
+      // ここではフラグだけ立て、pinchSeq の更新は pointerEnd に委ねる。
       if (Math.abs(ratio - 1) > 0.05) {
-        pinchSeq.value++
+        didPinch = true
       }
     }
   }
@@ -83,6 +90,13 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
       startDistance = 0
       startScale = 0
       persistFontScale()
+
+      // ピンチが成立していた場合、ここでカウンターを更新する。
+      // 400ms のガード期間が「指を離した瞬間」から始まる。
+      if (didPinch) {
+        pinchSeq.value++
+        didPinch = false
+      }
     }
 
     // 残りの pointer もクリアする (片方だけ残ると中途半端な状態になる)
@@ -91,6 +105,18 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
 
   function onPointerCancel(e) {
     onPointerEnd(e)
+  }
+
+  /**
+   * ピンチ直後の誤タップ抑止用。pinchSeq と pinchSeqSettled が不一致
+   * (= 最近ピンチが完了した) なら true を返し、pinchSeq を settled に
+   * 合わせて即座にガードを解除する (1 回消費)。
+   * 誰も消費しなかった場合は 400ms 後に refDebounced が追いついて自動解除。
+   */
+  function consumeRecentPinch() {
+    if (pinchSeq.value === pinchSeqSettled.value) return false
+    pinchSeq.value = pinchSeqSettled.value
+    return true
   }
 
   function bindPinchTarget(el) {
@@ -120,6 +146,6 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
   return {
     bindPinchTarget,
     isPinching,
-    hasRecentPinch,
+    consumeRecentPinch,
   }
 }

@@ -26,7 +26,7 @@ const router = useRouter()
 
 const { fontScale, setFontScale, persistFontScale } = useFontScale()
 const readerShellRef = ref(null)
-const { bindPinchTarget, hasRecentPinch } = usePinchFontScale({
+const { bindPinchTarget, consumeRecentPinch } = usePinchFontScale({
   setFontScale,
   persistFontScale,
   fontScale,
@@ -146,17 +146,22 @@ function advanceOrExit() {
 function handleShellClick(event) {
   if (event.target !== event.currentTarget) return
   // ピンチ直後にブラウザが合成 click を発火すると誤って次ページへ進む。
-  // hasRecentPinch は pinchSeq の直近更新を refDebounced で約 400ms 遅延させている間 true。
-  // そのため「最後の更新から約 400ms」のガードであり、指を止めて保持した場合などは
-  // ピンチ中/直後でも false になり得る。
-  if (hasRecentPinch.value) return
+  // consumeRecentPinch() は直後の 1 回だけ true を返しガードを解除する。
+  if (consumeRecentPinch()) return
   advanceOrExit()
 }
 
 // HomePage に戻る共通エントリ。キー操作 (ArrowUp / Escape) と
-// progressLabel クリックの両方から呼ばれる。
+// handleProgressClick の両方から呼ばれる。
 function goHome() {
   router.push('/')
+}
+
+// .reader-progress のクリック/タップ。ピンチ直後の合成 click が
+// .reader-shell ではなくこの要素上に落ちた場合にも誤遷移を防ぐ。
+function handleProgressClick() {
+  if (consumeRecentPinch()) return
+  goHome()
 }
 
 useKeyboard((event) => {
@@ -215,7 +220,7 @@ useKeyboard((event) => {
         class="reader-progress"
         role="button"
         tabindex="0"
-        @click.stop="goHome"
+        @click.stop="handleProgressClick"
         @keydown.enter.stop.prevent="goHome"
         @keyup.space.stop.prevent="goHome"
       >

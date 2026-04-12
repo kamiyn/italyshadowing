@@ -67,14 +67,15 @@ nextScale = startScale * (currentDistance / startDistance)
 
 ### 3. ピンチ後の誤タップ遷移を抑止する
 
-`ReaderPage` では、ピンチ後にブラウザが合成 click を発火すると、意図せず次ページへ進む恐れがある。これを避けるため、ピンチとして成立した操作の直後は `hasRecentPinch` を短時間 `true` に保ち、その保持期間中に発生した `click` は `handleShellClick()` で無視する。
+`ReaderPage` では、ピンチ後にブラウザが合成 click を発火すると、意図せず次ページへ進む (`.reader-shell` 背景) または HomePage に戻る (`.reader-progress`) 恐れがある。これを避けるため、ジェスチャー終了直後の click を **1 回だけ** 無視する。
 
 方針:
 
-- pinch 中に距離変化が閾値を超えたら、「直近で pinch があった」ことを表す元の ref を更新する
-- `hasRecentPinch` はその ref を `refDebounced` で短時間保持した値とする
-- `handleShellClick()` では `hasRecentPinch` が `true` の間は early return して、ページ送りを発生させない
-- click 無視の解除は `didPinch` の手動リセットではなく、debounce 時間の経過により `hasRecentPinch` が `false` へ戻ることで行う
+- pinch 中に距離変化が閾値を超えたら `didPinch = true` をフラグとして記録する
+- ジェスチャー終了 (`pointerup` / `pointercancel`) 時に `didPinch` が true なら `pinchSeq` をインクリメントし、`didPinch` をリセットする。これにより 400ms のガード期間が必ず「指を離した瞬間」から始まる
+- `consumeRecentPinch()` は `pinchSeq !== pinchSeqSettled` (= 最近ピンチした) なら true を返し、即座に両者を一致させてガードを解除する (1 回消費)
+- 誰も消費しなかった場合は 400ms 後に `refDebounced` が追いついて自動解除される (安全弁)
+- `handleShellClick()` と `handleProgressClick()` の両方で `consumeRecentPinch()` を呼び、合成 click がどちらの要素に落ちても抑止する
 
 ### 4. 永続化はジェスチャー終了時に 1 回だけ行う
 
@@ -96,7 +97,7 @@ nextScale = startScale * (currentDistance / startDistance)
 - 2 点間距離の計算
 - pinch 開始 / 更新 / 終了の状態管理
 - `setFontScale()` / `persistFontScale()` 呼び出し
-- 「直近で pinch が成立したか」を示す reactive フラグの提供
+- 「直近で pinch が成立したか」の 1 回消費型ガード関数の提供
 
 公開 API のイメージ:
 
@@ -104,7 +105,7 @@ nextScale = startScale * (currentDistance / startDistance)
 const {
   bindPinchTarget,
   isPinching,
-  hasRecentPinch,
+  consumeRecentPinch,
 } = usePinchFontScale({
   setFontScale,
   persistFontScale,
@@ -112,13 +113,18 @@ const {
 })
 ```
 
-`ReaderPage` 側は `hasRecentPinch.value` を `handleShellClick()` のガードに使う。
+`ReaderPage` 側は `consumeRecentPinch()` を click ハンドラのガードに使う。true を返したら即座にフラグを消費するため、直後の意図的タップは通る。
 
 ```js
 function handleShellClick(event) {
   if (event.target !== event.currentTarget) return
-  if (hasRecentPinch.value) return
+  if (consumeRecentPinch()) return
   advanceOrExit()
+}
+
+function handleProgressClick() {
+  if (consumeRecentPinch()) return
+  goHome()
 }
 ```
 
@@ -171,7 +177,7 @@ function handleShellClick(event) {
 
 - `reader-shell` に `ref` を付ける
 - pinch composable を接続する
-- `handleShellClick()` の先頭で recent pinch を確認し、直後 click を無視する
+- `handleShellClick()` と `handleProgressClick()` の先頭で `consumeRecentPinch()` を呼び、直後の合成 click を 1 回だけ無視する
 - 既存の `advanceOrExit()`、`goHome()`、キーボード操作は変更しない
 
 期待効果:
