@@ -234,18 +234,17 @@ useKeyboard((event) => {
 .reader-shell {
   /* dvh 未対応ブラウザ向けフォールバック。100vh はアドレスバーの出入りに
      追従しないが、min-height が効かないよりは安全。 */
-  min-height: calc(100vh - var(--v-layout-top, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  min-height: calc(100vh - var(--v-layout-top, 0px));
   /* 100dvh はアドレスバーの出入りに連動する動的ビューポート高さ。
-     対応ブラウザでは上の 100vh 宣言を上書きする。
-     safe-area padding は App.vue の .v-application でグローバルに掛かるため、
-     その分を差し引いて溢れを防ぐ。 */
-  min-height: calc(100dvh - var(--v-layout-top, 0px) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+     対応ブラウザでは上の 100vh 宣言を上書きする。 */
+  min-height: calc(100dvh - var(--v-layout-top, 0px));
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   /* 上下は 2rem、左右は画面幅の 10% を余白として確保する。
-     safe-area padding は App.vue の .v-application でグローバルに処理済み。 */
+     notch / ステータスバーとの重なりは許容する方針のため、
+     safe-area padding は掛けない。詳細: Documents/pwa-standalone.md */
   padding: 2rem 10%;
   text-align: center;
   /* .reader-progress を画面上端に絶対配置するための基準 */
