@@ -217,8 +217,11 @@ useKeyboard((event) => {
             :step="FONT_SCALE_STEP"
             aria-labelledby="font-size-section-heading"
             @input="onFontScaleSliderUpdate"
-            @pointerdown="onFontScaleSliderStart"
+            @pointerdown="(event) => { event.target?.setPointerCapture?.(event.pointerId); onFontScaleSliderStart(event) }"
             @pointerup="onFontScaleSliderEnd"
+            @pointercancel="onFontScaleSliderEnd"
+            @lostpointercapture="onFontScaleSliderEnd"
+            @blur="onFontScaleSliderEnd"
           >
           <output class="slider-thumb-label">
             {{ fontScalePercent }}
