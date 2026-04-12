@@ -195,7 +195,11 @@ useKeyboard((event) => {
       <p
         v-if="showProgress"
         class="reader-progress"
+        role="button"
+        tabindex="0"
         @click.stop="goHome"
+        @keydown.enter.stop.prevent="goHome"
+        @keydown.space.stop.prevent="goHome"
       >
         {{ progressLabel }}
       </p>
