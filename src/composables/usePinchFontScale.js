@@ -73,11 +73,13 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
       const currentDistance = getDistance()
       const ratio = currentDistance / startDistance
       const nextScale = startScale * ratio
+      const prevScale = fontScale.value
       setFontScale(nextScale)
 
-      // 距離変化が閾値を超えたら「実際にピンチした」とみなす。
-      // ここではフラグだけ立て、pinchSeq の更新は pointerEnd に委ねる。
-      if (Math.abs(ratio - 1) > 0.05) {
+      // ratio の閾値ではなく、setFontScale() 適用後に実際の scale が
+      // 変わったかどうかで「ピンチした」とみなす。これにより、
+      // setFontScale() 側の量子化・丸めがあっても pinchSeq の更新漏れを防ぐ。
+      if (fontScale.value !== prevScale) {
         didPinch = true
       }
     }
