@@ -76,9 +76,15 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
       const prevScale = fontScale.value
       setFontScale(nextScale)
 
-      // ratio の閾値ではなく、setFontScale() 適用後に実際の scale が
-      // 変わったかどうかで「ピンチした」とみなす。これにより、
-      // setFontScale() 側の量子化・丸めがあっても pinchSeq の更新漏れを防ぐ。
+      // setFontScale() 適用後に実際の scale が変わったかどうかで
+      // 「ピンチした」とみなす。これにより setFontScale() 側の量子化・丸めが
+      // あっても pinchSeq の更新漏れを防ぐ。
+      //
+      // 既知の制約: fontScale が min/max に到達している状態でさらに同方向へ
+      // ピンチした場合、clamp により値が変わらず didPinch=false のままになる。
+      // この場合 click ガードが効かないが、スケールが実際に動いていないため
+      // ユーザーが「操作した」と認識しにくく、誤タップの実害は小さいと判断し
+      // 許容する。
       if (fontScale.value !== prevScale) {
         didPinch = true
       }
@@ -86,7 +92,10 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
   }
 
   function onPointerEnd(e) {
-    pointers.delete(e.pointerId)
+    // 追跡していない pointerId (3 本目以降の指など) は無視する。
+    // ガードなしだと、追跡外の指が離れたときに isPinching を終了させてしまい、
+    // 残り 2 本指の move が無視されるバグになる。
+    if (!pointers.delete(e.pointerId)) return
 
     if (isPinching.value) {
       isPinching.value = false
@@ -135,6 +144,10 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
 
   function bindPinchTarget(el) {
     if (!el) return
+    if (el === boundEl) return
+    // 別要素に bind 済みの場合は先に解除して listener 二重登録と
+    // touch-action 置き去りを防ぐ。
+    if (boundEl) unbindPinchTarget()
     boundEl = el
     // Pointer Events の挙動を安定させるため、この composable で touch-action を明示設定する。
     // unbind 時に復元するため元の値を保存する。
