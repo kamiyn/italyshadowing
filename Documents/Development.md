@@ -42,9 +42,9 @@ npm run dev
 ## iPhone Safari に関する前提
 
 - 通常の iPhone Safari タブ表示では、ページ遷移直後から Web 側だけでアドレスバー / ツールバーを確実に隠すことはできません
-- `ReaderPage` で追加している `viewport-fit=cover`、`100dvh`、safe area 対応は「表示崩れを減らす」「standalone 表示時に画面を広く使う」ための調整であり、通常タブ表示の Safari UI を消す機能ではありません
+- `ReaderPage` で追加している `viewport-fit=cover` と `100dvh` は「表示崩れを減らす」「standalone 表示時に画面を広く使う」ための調整であり、通常タブ表示の Safari UI を消す機能ではありません
 - Safari のブラウザ UI を抑えた表示を求める場合は、「ホーム画面に追加」からの standalone 起動を前提に検証してください
-- iOS Safari の通常タブ表示と standalone 表示では safe area や viewport の効き方が異なるため、実機確認時は両方を分けて観察してください
+- iOS Safari の通常タブ表示と standalone 表示では viewport の効き方が異なるため、実機確認時は両方を分けて観察してください
 
 ## ビルド時の前処理
 
