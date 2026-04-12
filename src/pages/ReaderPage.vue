@@ -135,6 +135,12 @@ function handleShellClick(event) {
   advanceOrExit()
 }
 
+// HomePage に戻る共通エントリ。キー操作 (ArrowUp / Escape) と
+// progressLabel クリックの両方から呼ばれる。
+function goHome() {
+  router.push('/')
+}
+
 useKeyboard((event) => {
   switch (event.key) {
     case KEY_ARROW_LEFT:
@@ -151,7 +157,7 @@ useKeyboard((event) => {
     case KEY_ARROW_UP:
     case KEY_ESCAPE:
       event.preventDefault()
-      router.push('/')
+      goHome()
       break
   }
 })
@@ -189,6 +195,7 @@ useKeyboard((event) => {
       <p
         v-if="showProgress"
         class="reader-progress"
+        @click.stop="goHome"
       >
         {{ progressLabel }}
       </p>
@@ -269,6 +276,9 @@ useKeyboard((event) => {
    * フレックスフロー外に出すことで、.reader-line は .reader-shell の
    * 中央配置 (justify-content: center) を維持する。
    * 文字サイズは従来通り 0.875rem を維持。
+   *
+   * クリック/タップで HomePage に戻る (Escape キーと同じ動作) ため、
+   * クリック可能であることを示す cursor: pointer を付ける。
    */
   position: absolute;
   top: 1rem;
@@ -277,6 +287,7 @@ useKeyboard((event) => {
   margin: 0;
   color: rgba(var(--v-theme-on-background), 0.6);
   font-size: 0.875rem;
+  cursor: pointer;
 }
 
 .reader-error {
