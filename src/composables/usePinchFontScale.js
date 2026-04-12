@@ -33,6 +33,7 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
   let startScale = 0
 
   let boundEl = null
+  let savedTouchAction = ''
 
   function getDistance() {
     if (pointers.size < 2) return 0
@@ -122,7 +123,9 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
   function bindPinchTarget(el) {
     if (!el) return
     boundEl = el
-    // Pointer Events の挙動を安定させるため、この composable で touch-action を明示設定する
+    // Pointer Events の挙動を安定させるため、この composable で touch-action を明示設定する。
+    // unbind 時に復元するため元の値を保存する。
+    savedTouchAction = el.style.touchAction
     el.style.touchAction = 'pan-x pan-y'
     el.addEventListener('pointerdown', onPointerDown)
     el.addEventListener('pointermove', onPointerMove)
@@ -136,7 +139,9 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
     boundEl.removeEventListener('pointermove', onPointerMove)
     boundEl.removeEventListener('pointerup', onPointerEnd)
     boundEl.removeEventListener('pointercancel', onPointerCancel)
+    boundEl.style.touchAction = savedTouchAction
     boundEl = null
+    savedTouchAction = ''
   }
 
   onUnmounted(() => {
