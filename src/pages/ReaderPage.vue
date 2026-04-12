@@ -185,7 +185,7 @@ useKeyboard((event) => {
 </script>
 
 <template>
-  <v-main>
+  <main>
     <div
       ref="readerShellRef"
       class="reader-shell"
@@ -225,17 +225,17 @@ useKeyboard((event) => {
         {{ progressLabel }}
       </p>
     </div>
-  </v-main>
+  </main>
 </template>
 
 <style scoped>
 .reader-shell {
   /* dvh 未対応ブラウザ向けフォールバック。100vh はアドレスバーの出入りに
      追従しないが、min-height が効かないよりは安全。 */
-  min-height: calc(100vh - var(--v-layout-top, 0px));
+  min-height: 100vh;
   /* 100dvh はアドレスバーの出入りに連動する動的ビューポート高さ。
      対応ブラウザでは上の 100vh 宣言を上書きする。 */
-  min-height: calc(100dvh - var(--v-layout-top, 0px));
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   align-items: center;

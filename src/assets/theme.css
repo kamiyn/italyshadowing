@@ -1,0 +1,49 @@
+/*
+ * Global theme variables and minimal reset.
+ *
+ * CSS 変数は Vuetify が自動生成していた `--v-theme-*` と同じ命名規則・RGB
+ * トリプレット形式を維持する。各コンポーネントの <style> では引き続き
+ *   rgb(var(--v-theme-readerBody))
+ *   rgba(var(--v-theme-on-background), 0.6)
+ * のように参照できる。
+ *
+ * 色値の設計根拠は Documents/reader-typography.md を参照。
+ */
+
+:root {
+  /* ── Core ─────────────────────────────────────────── */
+  --v-theme-background: 0, 0, 0;
+  --v-theme-on-background: 255, 255, 255;
+  --v-theme-surface: 0, 0, 0;
+  --v-theme-on-surface: 255, 255, 255;
+  --v-theme-error: 255, 82, 82;
+
+  /* ── Reader custom colors ────────────────────────── */
+  --v-theme-readerBody: 242, 240, 234;
+  --v-theme-readerAccent: 255, 199, 102;
+  --v-theme-readerUnderline: 180, 220, 255;
+}
+
+/* Minimal reset */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background-color: rgb(var(--v-theme-background));
+  color: rgb(var(--v-theme-on-background));
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}

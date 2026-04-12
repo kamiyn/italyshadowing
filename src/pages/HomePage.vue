@@ -65,12 +65,12 @@ const fontScalePercent = computed(() => `${Math.round(fontScale.value * 100)}%`)
 // 引っかかりを起こすのを防ぐ。
 const isDraggingFontScale = ref(false)
 
-function onFontScaleSliderUpdate(value) {
-  setFontScale(value)
-  // キーボードでの slider 操作 (フォーカス時の ←/→) は @start/@end を伴わない
-  // ため isDraggingFontScale が false のまま @update:model-value だけが届く。
+function onFontScaleSliderUpdate(event) {
+  setFontScale(Number(event.target.value))
+  // キーボードでの slider 操作 (フォーカス時の ←/→) は pointerdown/pointerup を
+  // 伴わないため isDraggingFontScale が false のまま input イベントだけが届く。
   // この場合は 1 操作 = 1 keystroke なのでその場で永続化してよい。
-  // ドラッグ中 (= isDraggingFontScale=true) はここでは保存せず @end に委ねる。
+  // ドラッグ中 (= isDraggingFontScale=true) はここでは保存せず pointerup に委ねる。
   if (!isDraggingFontScale.value) persistFontScale()
 }
 
@@ -96,7 +96,7 @@ function selectAndOpen(index) {
 
 // フォントサイズ調整 (←/→)。スライダーがフォーカスされている場合は
 // useKeyboard 側が text-entry 要素に対する keydown ハンドラ実行を skip するため
-// Vuetify ネイティブのスライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
+// ネイティブのスライダー操作が働き、本関数は呼ばれない (= 二重発火しない)。
 //
 // 値の clamp / 量子化は useFontScale.js の setFontScale が集約処理する。
 // 1 keystroke = 1 完結操作なので、その場で永続化までまとめて行う。
@@ -137,8 +137,8 @@ useKeyboard((event) => {
 </script>
 
 <template>
-  <v-main>
-    <v-container class="home-container">
+  <main>
+    <div class="home-container">
       <h1 class="home-title">
         <span>Italy Shadowing</span>
         <small class="home-title-hash">
@@ -163,22 +163,28 @@ useKeyboard((event) => {
       >
         教材がまだ登録されていません。
       </p>
-      <v-list
+      <ul
         v-else
-        lines="two"
         class="lesson-list"
       >
-        <v-list-item
+        <li
           v-for="(lesson, i) in lessons"
           :key="lesson.filename"
-          :active="i === selectedIndex"
-          class="lesson-item"
+          :class="['lesson-item', { active: i === selectedIndex }]"
+          role="button"
+          tabindex="0"
           @click="selectAndOpen(i)"
+          @keydown.enter.prevent="selectAndOpen(i)"
+          @keydown.space.prevent="selectAndOpen(i)"
         >
-          <v-list-item-title>{{ lesson.title }}</v-list-item-title>
-          <v-list-item-subtitle>{{ lesson.description }}</v-list-item-subtitle>
-        </v-list-item>
-      </v-list>
+          <div class="lesson-item-title">
+            {{ lesson.title }}
+          </div>
+          <div class="lesson-item-subtitle">
+            {{ lesson.description }}
+          </div>
+        </li>
+      </ul>
       <p
         v-if="showHint"
         class="home-hint"
@@ -203,39 +209,44 @@ useKeyboard((event) => {
           aria-labelledby で h2 見出しと slider を紐付ける。これにより
           スクリーンリーダーで slider にフォーカスした際「表示フォントサイズ
           スライダー 現在値 …」のように読み上げられ、何を調整するスライダー
-          か分かるようになる。Vuetify v-slider は内部 input role="slider"
-          要素に aria-* 属性を pass-through する。
+          か分かるようになる。
         -->
-        <v-slider
-          :model-value="fontScale"
-          :min="FONT_SCALE_MIN"
-          :max="FONT_SCALE_MAX"
-          :step="FONT_SCALE_STEP"
-          aria-labelledby="font-size-section-heading"
-          thumb-label
-          hide-details
-          @update:model-value="onFontScaleSliderUpdate"
-          @start="onFontScaleSliderStart"
-          @end="onFontScaleSliderEnd"
-        >
-          <template #thumb-label>
+        <div class="slider-wrapper">
+          <input
+            type="range"
+            class="font-scale-slider"
+            :value="fontScale"
+            :min="FONT_SCALE_MIN"
+            :max="FONT_SCALE_MAX"
+            :step="FONT_SCALE_STEP"
+            aria-labelledby="font-size-section-heading"
+            @input="onFontScaleSliderUpdate"
+            @pointerdown="(event) => { event.target?.setPointerCapture?.(event.pointerId); onFontScaleSliderStart(event) }"
+            @pointerup="onFontScaleSliderEnd"
+            @pointercancel="onFontScaleSliderEnd"
+            @lostpointercapture="onFontScaleSliderEnd"
+            @blur="onFontScaleSliderEnd"
+          >
+          <output class="slider-thumb-label">
             {{ fontScalePercent }}
-          </template>
-        </v-slider>
+          </output>
+        </div>
       </section>
-    </v-container>
+    </div>
     <div
       ref="previewBoxRef"
       class="font-size-preview-box"
     >
       <ReaderText html="Lorem Ipsum" />
     </div>
-  </v-main>
+  </main>
 </template>
 
 <style scoped>
 .home-container {
   max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
 }
 
 .home-title {
@@ -261,6 +272,29 @@ useKeyboard((event) => {
 .lesson-item {
   border-radius: 8px;
   margin-bottom: 4px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.lesson-item:hover {
+  background-color: rgba(var(--v-theme-on-background), 0.08);
+}
+
+.lesson-item.active {
+  background-color: rgba(var(--v-theme-on-background), 0.12);
+}
+
+.lesson-item-title {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.lesson-item-subtitle {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: rgba(var(--v-theme-on-background), 0.6);
+  margin-top: 2px;
 }
 
 .home-hint {
@@ -292,12 +326,75 @@ useKeyboard((event) => {
   margin: 0 0 0.75rem;
 }
 
+/* ── Range slider styling ──────────────────────────── */
+.slider-wrapper {
+  position: relative;
+  padding-top: 1.75rem;
+}
+
+.font-scale-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 20px;
+  background: transparent;
+  outline: none;
+}
+
+.font-scale-slider:focus-visible {
+  outline: 2px solid rgba(var(--v-theme-on-background), 0.9);
+  outline-offset: 4px;
+}
+.font-scale-slider::-webkit-slider-runnable-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(var(--v-theme-on-background), 0.24);
+}
+
+.font-scale-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-on-background));
+  cursor: pointer;
+  border: none;
+  margin-top: -8px;
+}
+
+.font-scale-slider::-moz-range-track {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(var(--v-theme-on-background), 0.24);
+}
+
+.font-scale-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-on-background));
+  cursor: pointer;
+  border: none;
+}
+
+.slider-thumb-label {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  color: rgba(var(--v-theme-on-background), 0.7);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
 /*
  * プレビューは ReaderText コンポーネントを使い、ReaderPage 本文と
  * 全く同じ font-size 計算式・font-family・色を共有する (重複定義しない)。
  * こうすることで HomePage で見ているサイズがそのまま教材表示時のサイズになる。
  *
- * v-container の外に置いているため自然に画面幅全体を使う。
+ * home-container の外に置いているため自然に画面幅全体を使う。
  * padding: 0 10% で ReaderPage の .reader-shell と同じテキスト幅になる。
  */
 .font-size-preview-box {

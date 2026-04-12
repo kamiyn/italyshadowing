@@ -1,6 +1,5 @@
 import { defineConfig } from 'rolldown-vite'
 import vue from '@vitejs/plugin-vue'
-import vuetify from 'vite-plugin-vuetify'
 import { fileURLToPath, URL } from 'node:url'
 import { execSync } from 'node:child_process'
 import { resolveBase, basePathSegmentsCount } from './vite/resolveBase.js'
@@ -30,7 +29,6 @@ export default defineConfig({
   },
   plugins: [
     vue(),
-    vuetify({ autoImport: true }),
     spaFallback404Plugin({ pathSegmentsToKeep: basePathSegmentsCount(BASE) }),
     baseRewritePlugin(),
   ],
