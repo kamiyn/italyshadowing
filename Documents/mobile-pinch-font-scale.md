@@ -73,13 +73,14 @@ nextScale = startScale * (currentDistance / startDistance)
 
 - pinch 中に `setFontScale()` 適用後の `fontScale` 実変化、または 2 本指距離の閾値超過のどちらかで `didPinch = true` を記録する。前者は 0.05 刻み量子化により高倍率側で 5% 未満の小さなピンチでも実際の 1 step 更新が起こり得るためその取りこぼしを防ぎ、後者は `fontScale` が min/max に到達済みで clamp により値が変わらない場合でも直後の合成 click ガードを有効に保つために必要
 - ジェスチャー終了 (`pointerup` / `pointercancel`) 時に `didPinch` が true なら `pinchSeq` をインクリメントし、`didPinch` をリセットする。これにより 400ms のガード期間が必ず「指を離した瞬間」から始まる
+- `persistFontScale()` は `didPinch` ではなく `fontScale` の最終値が `startScale` から変わったときだけ呼ぶ。これにより min/max 張り付きの明確なピンチでは click ガードだけを有効にし、不要な `localStorage.setItem()` は避ける
 - `consumeRecentPinch()` は `pinchSeq !== pinchSeqSettled` (= 最近ピンチした) なら true を返し、即座に両者を一致させてガードを解除する (1 回消費)
 - 誰も消費しなかった場合は 400ms 後に `refDebounced` が追いついて自動解除される (安全弁)
 - `handleShellClick()` と `handleProgressClick()` の両方で `consumeRecentPinch()` を呼び、合成 click がどちらの要素に落ちても抑止する
 
 ### 4. 永続化はジェスチャー終了時に 1 回だけ行う
 
-既存スライダー実装と同じく、ピンチ中は `setFontScale()` のみ呼び、`persistFontScale()` は gesture end で 1 回だけ呼ぶ。これにより `localStorage.setItem()` の高頻度実行を避ける。
+既存スライダー実装と同じく、ピンチ中は `setFontScale()` のみ呼ぶ。`persistFontScale()` は gesture end で、かつ最終的に `fontScale` が変わっていた場合にだけ 1 回呼ぶ。これにより `localStorage.setItem()` の高頻度実行と不要な書き込みの両方を避ける。
 
 ## 技術方針
 

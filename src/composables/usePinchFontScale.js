@@ -4,8 +4,9 @@ import { refDebounced } from '@vueuse/core'
 // 2 本指ピンチジェスチャーで fontScale を調整する composable。
 //
 // Pointer Events を使い、2 本の pointerId を追跡する。
-// ピンチ中は setFontScale() で DOM 反映のみ、ジェスチャー終了時に
-// persistFontScale() を 1 回だけ呼ぶ。
+// ピンチ中は setFontScale() で DOM 反映のみ行う。
+// persistFontScale() はジェスチャー終了時、最終的に fontScale が変わっていた
+// 場合にだけ 1 回呼ぶ。
 //
 // 呼び出し側は bindPinchTarget(el) で対象要素を接続し、
 // consumeRecentPinch() で直後の誤タップを 1 回だけ抑止できる。
@@ -100,13 +101,21 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
     if (!pointers.delete(e.pointerId)) return
 
     if (isPinching.value) {
+      const didScaleChange = fontScale.value !== startScale
       isPinching.value = false
       startDistance = 0
       startScale = 0
-      persistFontScale()
 
-      // ピンチが成立していた場合、ここでカウンターを更新する。
-      // 400ms のガード期間が「指を離した瞬間」から始まる。
+      // 永続化は最終的に scale が変わったときだけ行う。
+      // click ガードとは条件を分け、min/max 張り付きの明確なピンチでは
+      // setItem を避けつつ直後の合成 click だけ抑止できるようにする。
+      if (didScaleChange) {
+        persistFontScale()
+      }
+
+      // ピンチが成立していた (= 実 scale 変化 or 距離変化の閾値超過) 場合だけ
+      // click ガードを有効化する。2 本指タップや量子化未満の微動では
+      // 不要なガードを立てない。
       if (didPinch) {
         pinchSeq.value++
         didPinch = false
