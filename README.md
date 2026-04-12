@@ -107,6 +107,13 @@
 - `Escape`
   - 教材ページでトップページへ戻る (`ArrowUp` と同じ動作)
 
+## iPhone Safari 表示
+
+- 通常の iPhone Safari タブ表示では、Web ページ側から初期表示の時点でアドレスバーやツールバーを確実に隠すことはできません
+- 教材ページ (`ReaderPage`) は `100dvh` を使って、ブラウザ UI の有無で表示が崩れにくいように調整しています
+- より全画面に近い表示を期待する場合は、iPhone の「ホーム画面に追加」から起動してください
+- ホーム画面追加後の standalone 表示では、Safari のアドレスバーなしに近い表示になりますが、通常タブ表示と完全に同一ではありません
+
 ## 関連ドキュメント
 
 開発・運用に関するドキュメントは `Documents/` 配下に分離してあります。
@@ -114,6 +121,7 @@
 - [`Documents/Architecture.md`](Documents/Architecture.md) — 現状の内部設計 (画面構成・データ設計・処理フロー・責務分割)
 - [`Documents/Plan.md`](Documents/Plan.md) — 初期プランニングメモ (実装着手前の要件スケッチ。アーカイブ用途)
 - [`Documents/mobile-pinch-font-scale.md`](Documents/mobile-pinch-font-scale.md) — モバイル向けピンチフォントサイズ調整の実装方針
+- [`Documents/pwa-standalone.md`](Documents/pwa-standalone.md) — PWA standalone モードと iOS Safari 全画面表示の設計
 - [`Documents/Development.md`](Documents/Development.md) — 開発手順 (技術構成・npm スクリプト・デバッグ起動・ビルド前処理)
 - [`Documents/Deployment.md`](Documents/Deployment.md) — GitHub Pages デプロイ手順 (初回セットアップ・自動デプロイ・手動デプロイ)
 - `Documents/ADR-*.md` — Architecture Decision Records (個別の実装判断と背景)

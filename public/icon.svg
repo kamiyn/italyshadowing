@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="64" fill="#121212"/>
+  <!-- Speech bubble outline representing shadowing/listening -->
+  <ellipse cx="256" cy="220" rx="140" ry="100" fill="none" stroke="#e0e0e0" stroke-width="12"/>
+  <!-- Tail of speech bubble -->
+  <path d="M200 310 Q180 370 140 380 Q200 360 220 320" fill="#e0e0e0"/>
+  <!-- Sound waves representing voice/repetition -->
+  <path d="M310 180 Q340 220 310 260" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round"/>
+  <path d="M340 160 Q380 220 340 280" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round"/>
+  <path d="M370 140 Q420 220 370 300" fill="none" stroke="#e0e0e0" stroke-width="10" stroke-linecap="round"/>
+  <!-- "IT" text for Italy -->
+  <text x="220" y="235" font-family="sans-serif" font-weight="bold" font-size="80" fill="#e0e0e0">IT</text>
+</svg>
