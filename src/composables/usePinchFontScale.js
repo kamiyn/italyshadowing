@@ -1,4 +1,5 @@
-import { onUnmounted, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
+import { refDebounced } from '@vueuse/core'
 
 // 2 本指ピンチジェスチャーで fontScale を調整する composable。
 //
@@ -7,16 +8,17 @@ import { onUnmounted, ref } from 'vue'
 // persistFontScale() を 1 回だけ呼ぶ。
 //
 // 呼び出し側は bindPinchTarget(el) で対象要素を接続し、
-// consumeRecentPinch() で直後の誤タップ抑止に使える。
+// hasRecentPinch で直後の誤タップ抑止を判定できる。
 
 export function usePinchFontScale({ setFontScale, persistFontScale, fontScale }) {
   const isPinching = ref(false)
 
-  // ピンチが成立したか (距離変化が閾値を超えた) のフラグ。
-  // ジェスチャー終了後に consumeRecentPinch() で 1 回だけ消費される。
-  let didPinch = false
-  // didPinch を自動リセットするタイマー ID
-  let resetTimer = null
+  // ピンチが成立するたびにインクリメントするカウンター。refDebounced で
+  // 400ms 遅延の追随版を作り、両者が不一致の間 = 「最近ピンチした」期間。
+  // setTimeout / clearTimeout の手動管理を排除し、宣言的に表現する。
+  const pinchSeq = ref(0)
+  const pinchSeqSettled = refDebounced(pinchSeq, 400)
+  const hasRecentPinch = computed(() => pinchSeq.value !== pinchSeqSettled.value)
 
   // 追跡中の 2 本の pointer
   const pointers = new Map()
@@ -68,7 +70,7 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
 
       // 距離変化が閾値を超えたら「実際にピンチした」とみなす
       if (Math.abs(ratio - 1) > 0.05) {
-        didPinch = true
+        pinchSeq.value++
       }
     }
   }
@@ -81,14 +83,6 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
       startDistance = 0
       startScale = 0
       persistFontScale()
-
-      if (didPinch) {
-        // 短時間後に自動リセット (consumeRecentPinch が呼ばれなかった場合の安全弁)
-        clearTimeout(resetTimer)
-        resetTimer = setTimeout(() => {
-          didPinch = false
-        }, 400)
-      }
     }
 
     // 残りの pointer もクリアする (片方だけ残ると中途半端な状態になる)
@@ -97,18 +91,6 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
 
   function onPointerCancel(e) {
     onPointerEnd(e)
-  }
-
-  /**
-   * ピンチ直後の誤タップ抑止用。didPinch が true なら true を返し、
-   * フラグを消費 (false に戻す)。呼び出し側は click ハンドラの先頭で
-   * これを呼び、true なら early return する。
-   */
-  function consumeRecentPinch() {
-    if (!didPinch) return false
-    didPinch = false
-    clearTimeout(resetTimer)
-    return true
   }
 
   function bindPinchTarget(el) {
@@ -133,12 +115,11 @@ export function usePinchFontScale({ setFontScale, persistFontScale, fontScale })
 
   onUnmounted(() => {
     unbindPinchTarget()
-    clearTimeout(resetTimer)
   })
 
   return {
     bindPinchTarget,
     isPinching,
-    consumeRecentPinch,
+    hasRecentPinch,
   }
 }

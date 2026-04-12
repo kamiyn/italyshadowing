@@ -26,7 +26,7 @@ const router = useRouter()
 
 const { fontScale, setFontScale, persistFontScale } = useFontScale()
 const readerShellRef = ref(null)
-const { bindPinchTarget, consumeRecentPinch } = usePinchFontScale({
+const { bindPinchTarget, hasRecentPinch } = usePinchFontScale({
   setFontScale,
   persistFontScale,
   fontScale,
@@ -146,8 +146,8 @@ function advanceOrExit() {
 function handleShellClick(event) {
   if (event.target !== event.currentTarget) return
   // ピンチ直後にブラウザが合成 click を発火すると誤って次ページへ進む。
-  // consumeRecentPinch() が true を返す間は 1 回だけ click を無視する。
-  if (consumeRecentPinch()) return
+  // hasRecentPinch は pinchSeq と refDebounced の不一致で 400ms 間 true になる。
+  if (hasRecentPinch.value) return
   advanceOrExit()
 }
 

@@ -158,3 +158,4 @@ GitHub Pages のサブパス配備等では、`/...` のリテラル指定は de
 - `Documents/ADR-003-build-pipeline-chaining.md` — `validate-lessons → lint-fix → vite build` を npm `&&` で直列化する決定と、`prebuild` フック / Vite プラグイン不採用の理由 (旧 `generate-index` ステップは validate-lessons として再構成)
 - `Documents/ADR-004-dependency-update-workflow.md` — `npm outdated` を起点とした依存パッケージ定期更新フローと、`.nvmrc` / `engines.node` / Actions Node ランタイムの同期義務
 - `Documents/ADR-005-localstorage-optional-persistence.md` — `localStorage` / `sessionStorage` 等のブラウザ永続化を best-effort なオプショナル動作として扱う方針と try/catch 義務
+- `Documents/ADR-006-prefer-vueuse-ref-utilities.md` — タイマー管理に `setTimeout` / `clearTimeout` の手動管理ではなく VueUse の `refDebounced` / `refThrottled` を優先する決定
