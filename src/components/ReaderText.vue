@@ -52,7 +52,26 @@ defineProps({
   );
   line-height: 1.5;
   width: 100%;
-  font-family: 'Roboto Serif Variable', 'Roboto Serif', serif;
+  /*
+   * OS 標準セリフフォントのフォールバックスタック (外部フォントファイル不要)
+   *
+   * ui-serif  — CSS Fonts Level 4 のシステム UI serif キーワード
+   *             Apple (iOS/macOS) → New York (可変フォント、opsz / wght 軸あり)
+   *             Windows (Chrome/Edge) → Georgia 相当
+   *             Android (Chrome) → システム既定 serif (多くは Noto Serif)
+   * 'New York' — ui-serif 非対応の旧ブラウザ向け Apple 明示指定
+   * 'Noto Serif' — Android 標準 serif の明示指定
+   * Georgia   — Windows / 全プラットフォームの web-safe serif 安全網
+   * Cambria   — Windows 追加フォールバック (本文組みに適した設計)
+   * serif     — ジェネリック最終フォールバック
+   *
+   * font-weight: 500 について:
+   *   New York / Noto Serif は可変フォントのため 500 が有効。
+   *   Georgia / Cambria は 400/700 のみのため 500 は 400 として描画される (許容範囲)。
+   * font-optical-sizing: auto について:
+   *   New York は opsz 軸をサポート。Georgia/Cambria では無視されるが問題なし。
+   */
+  font-family: ui-serif, 'New York', 'Noto Serif', Georgia, Cambria, serif;
   font-weight: 500;
   font-optical-sizing: auto;
   color: rgb(var(--v-theme-readerBody));
