@@ -210,9 +210,7 @@ useKeyboard((event) => {
           </template>
         </v-slider>
         <div class="font-size-preview-box">
-          <ReaderText nowrap>
-            Lorem Ipsum
-          </ReaderText>
+          <ReaderText html="Lorem Ipsum" />
         </div>
       </section>
     </v-container>
@@ -271,17 +269,10 @@ useKeyboard((event) => {
  * プレビューは ReaderText コンポーネントを使い、ReaderPage 本文と
  * 全く同じ font-size 計算式・font-family・色を共有する (重複定義しない)。
  * こうすることで HomePage で見ているサイズがそのまま教材表示時のサイズになる。
- *
- * このボックスは flex で中央寄せし、overflow: hidden を併用することで、
- * 高 font-scale 時に内側 ReaderText の幅が画面幅を超えても左右対称に
- * 切り落とされる (text-align ではなく flex を使う理由は、子要素 ReaderText
- * がブロック相当の width:auto + flex-shrink:0 になっているため)。
+ * text-align: center は ReaderPage の .reader-shell と揃えるため。
  */
 .font-size-preview-box {
-  width: 100%;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
+  text-align: center;
   margin-top: 0.5rem;
 }
 </style>

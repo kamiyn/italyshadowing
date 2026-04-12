@@ -12,32 +12,19 @@
  * Documents/reader-typography.md を参照。
  *
  * 使い方:
- * - ReaderPage は教材行 HTML を `html` prop で渡す (innerHTML として展開)。
- * - HomePage プレビュー等で静的テキストを描画する場合は default slot を使う。
- * - `nowrap` は HomePage プレビュー専用の修飾子。1 行で固定し横幅を内容に
- *   合わせるため、親コンテナ側で flex 中央寄せ + overflow:hidden することで
- *   高 font-scale 時にも左右対称に切り落とせる。
+ * - `html` prop に描画したい文字列を渡す (v-html で展開される)。
+ *   教材行 HTML でも静的プレビュー文字列でも同じインタフェースを使う。
  */
 defineProps({
-  html: { type: String, default: '' },
-  nowrap: { type: Boolean, default: false },
+  html: { type: String, required: true },
 })
 </script>
 
 <template>
   <div
-    v-if="html"
     class="reader-text"
-    :class="{ 'reader-text--nowrap': nowrap }"
     v-html="html"
   />
-  <div
-    v-else
-    class="reader-text"
-    :class="{ 'reader-text--nowrap': nowrap }"
-  >
-    <slot />
-  </div>
 </template>
 
 <style scoped>
@@ -69,19 +56,6 @@ defineProps({
   font-weight: 500;
   font-optical-sizing: auto;
   color: rgb(var(--v-theme-readerBody));
-}
-
-/*
- * HomePage プレビュー用バリアント。1 行で固定し、横幅は内容に合わせる。
- * 親 (.font-size-preview-box) で flex 中央寄せ + overflow:hidden しているため、
- * 高 font-scale で内容が画面幅を超えても左右対称に切り落とされる。
- * 単一行表示なので line-height は本文より詰める。
- */
-.reader-text--nowrap {
-  white-space: nowrap;
-  width: auto;
-  flex-shrink: 0;
-  line-height: 1.2;
 }
 
 /* 教材コンテンツ中の <b> 要素に対するスタイル

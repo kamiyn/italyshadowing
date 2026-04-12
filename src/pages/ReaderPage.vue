@@ -120,8 +120,7 @@ function goToPage(next) {
 // 「次へ」操作の共通エントリ。最終ページから更に次へ進もうとした場合は
 // HomePage に戻す。キー操作 (Space / →) と画面タップの両方から呼ばれる。
 function advanceOrExit() {
-  if (lines.value.length === 0) return
-  if (effectivePage.value >= lines.value.length - 1) {
+  if (lines.value.length === 0 || effectivePage.value >= lines.value.length - 1) {
     goHome()
     return
   }
