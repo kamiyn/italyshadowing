@@ -39,6 +39,13 @@ npm run dev
 - `data/*.json` は Vite の `import.meta.glob` を経由して JS バンドルへ取り込まれており、ファイルを編集すると Vite の HMR で自動的にアプリへ反映されます
 - 新しい教材ファイルを追加・削除した場合も同様に HMR で反映されます (一覧用の `index.json` は不要で、`src/lib/dataClient.js` が動的に組み立てます)
 
+## iPhone Safari に関する前提
+
+- 通常の iPhone Safari タブ表示では、ページ遷移直後から Web 側だけでアドレスバー / ツールバーを確実に隠すことはできません
+- `ReaderPage` で追加している `viewport-fit=cover`、`100dvh`、safe area 対応は「表示崩れを減らす」「standalone 表示時に画面を広く使う」ための調整であり、通常タブ表示の Safari UI を消す機能ではありません
+- Safari のブラウザ UI を抑えた表示を求める場合は、「ホーム画面に追加」からの standalone 起動を前提に検証してください
+- iOS Safari の通常タブ表示と standalone 表示では safe area や viewport の効き方が異なるため、実機確認時は両方を分けて観察してください
+
 ## ビルド時の前処理
 
 ビルドプロセスでは、Vite の本ビルドの前に次を実行します (ADR-003 参照)。
