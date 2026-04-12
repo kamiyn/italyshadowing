@@ -209,11 +209,11 @@ useKeyboard((event) => {
             {{ fontScalePercent }}
           </template>
         </v-slider>
-        <div class="font-size-preview-box">
-          <ReaderText html="Lorem Ipsum" />
-        </div>
       </section>
     </v-container>
+    <div class="font-size-preview-box">
+      <ReaderText html="Lorem Ipsum" />
+    </div>
   </v-main>
 </template>
 
@@ -270,18 +270,12 @@ useKeyboard((event) => {
  * 全く同じ font-size 計算式・font-family・色を共有する (重複定義しない)。
  * こうすることで HomePage で見ているサイズがそのまま教材表示時のサイズになる。
  *
- * v-container (max-width: 720px) の制約を full-bleed パターンで突き抜け、
- * ReaderPage の .reader-shell と同じ padding: 0 10% を適用することで
- * プレビューの折り返し位置が実際の教材表示と一致する。
+ * v-container の外に置いているため自然に画面幅全体を使う。
+ * padding: 0 10% で ReaderPage の .reader-shell と同じテキスト幅になる。
  */
 .font-size-preview-box {
   text-align: center;
   margin-top: 0.5rem;
-  width: 100vw;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
   padding: 0 10%;
-  box-sizing: border-box;
 }
 </style>
