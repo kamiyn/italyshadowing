@@ -142,10 +142,20 @@ function advanceOrExit() {
 
 // .reader-shell (本文含む) をタップ/クリックしたとき次へ進める。
 // .reader-progress は @click.stop で伝播を止めるため、ここには届かない。
-function handleShellClick() {
+// 左マージン (padding-left) 内のタップは「前のページに戻る」として扱う。
+// iPhone 等タッチ端末でキーボード ← 相当の操作を提供するため。
+function handleShellClick(event) {
   // ピンチ直後にブラウザが合成 click を発火すると誤って次ページへ進む。
   // consumeRecentPinch() は直後の 1 回だけ true を返しガードを解除する。
   if (consumeRecentPinch()) return
+
+  const shell = readerShellRef.value
+  const paddingLeft = parseFloat(getComputedStyle(shell).paddingLeft)
+  if (event.clientX - shell.getBoundingClientRect().left < paddingLeft) {
+    goToPage(effectivePage.value - 1)
+    return
+  }
+
   advanceOrExit()
 }
 
