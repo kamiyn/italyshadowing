@@ -150,6 +150,12 @@ function onRemoveClick() {
     @keydown.enter.stop
     @keydown.space.stop
   >
+    <!--
+      教材音声は MP3 のみを受け付ける (accept="audio/mpeg,.mp3")。
+      対応形式を MP3 に限定するのは意図した設計で、他形式 (wav/ogg 等) は
+      選択させない。教材配布フォーマットを 1 つに揃え、端末保存する Blob の
+      形式差異を持ち込まないため。
+    -->
     <input
       ref="fileInputRef"
       type="file"

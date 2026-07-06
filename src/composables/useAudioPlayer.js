@@ -50,6 +50,10 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   let objectUrl = null
   let recordedCues = []
   let loopIndex = 0
+  // reloadForLesson の非同期取得 (getAudioBlob) の世代トークン。教材切り替え
+  // だけでなく、同一教材内で import / 削除が割り込んだ場合にも、進行中の
+  // 古い取得結果で音声ソースを上書きしないためのガードに使う。
+  let loadToken = 0
 
   const audio = new Audio()
   audio.preload = 'auto'
@@ -170,14 +174,17 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   // 呼ばれる。lesson データ取得後 = lineCount 確定後に呼ぶこと (キューの
   // 行数検証に必要)。
   async function reloadForLesson(name) {
+    const token = ++loadToken
     currentFilename = name
     resetPlaybackState()
     detachAudio()
     storageNotice.value = ''
     cues.value = loadCues(name, lineCount.value)
     const blob = await getAudioBlob(name)
-    // 取得中にさらに教材が切り替わっていたら古い結果は捨てる。
-    if (name !== currentFilename) return
+    // 取得中に別教材への切り替え、または同一教材内で import / 削除が
+    // 割り込んでいたら (= トークンが進んでいたら)、この古い取得結果は
+    // 捨てる。これがないと import 済みの新しい音声を古い Blob で上書きする。
+    if (token !== loadToken) return
     if (blob) attachBlob(blob)
   }
 
@@ -188,6 +195,9 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   // キュー再記録で上書きすればよい。
   async function importFile(file) {
     if (!(file instanceof Blob)) return
+    // 進行中の reloadForLesson の非同期取得結果を無効化する (下記 attachBlob で
+    // 差し替えた新しい音声を、後から解決した古い Blob で上書きさせない)。
+    loadToken++
     resetPlaybackState()
     attachBlob(file)
     storageNotice.value = ''
@@ -198,6 +208,8 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   // 音声を端末から削除して初期状態へ戻す。キューは localStorage に残す
   // (同じ音源を再読み込みすれば再利用できる)。
   async function removeAudio() {
+    // import と同様、進行中の reloadForLesson の取得結果を無効化する。
+    loadToken++
     resetPlaybackState()
     detachAudio()
     storageNotice.value = ''
@@ -311,11 +323,13 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     if (last !== undefined && cue <= last) cue = last + 0.01
     recordedCues.push(cue)
     recordedCount.value = recordedCues.length
+    // タップした行を先に表示へ反映してから記録を確定する。最終行 (N 回目の
+    // タップ) でも onAutoPage を確実に通し、最終ページが表示されないまま
+    // 記録が終わる問題を防ぐ。
+    onAutoPage(recordedCues.length - 1)
     if (recordedCues.length >= lineCount.value) {
       finishRecording()
-      return
     }
-    onAutoPage(recordedCues.length - 1)
   }
 
   function finishRecording() {
@@ -338,6 +352,10 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
 
   onUnmounted(() => {
     audio.pause()
+    audio.removeEventListener('play', onPlayEvent)
+    audio.removeEventListener('pause', onPauseEvent)
+    audio.removeEventListener('loadedmetadata', onLoadedMetadata)
+    audio.removeEventListener('ended', onEnded)
     revokeObjectUrl()
   })
 
