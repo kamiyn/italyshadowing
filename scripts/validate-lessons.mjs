@@ -57,7 +57,7 @@ async function main() {
       parsed = JSON.parse(raw)
     }
     catch (err) {
-      throw new Error(`Failed to read or parse ${entry.name}: ${err.message}`)
+      throw new Error(`Failed to read or parse ${entry.name}: ${err.message}`, { cause: err })
     }
 
     if (typeof parsed.title !== 'string') {
