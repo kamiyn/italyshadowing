@@ -25,6 +25,7 @@ const {
   hasAudio,
   isPlaying,
   isLooping,
+  isRepeatingAll,
   isRecording,
   currentTime,
   duration,
@@ -40,6 +41,7 @@ const {
   setSpeed,
   persistSpeed,
   toggleLoop,
+  toggleRepeatAll,
   startRecording,
   cancelRecording,
 } = props.player
@@ -94,6 +96,10 @@ function onPlayClick() {
 
 function onLoopClick() {
   toggleLoop(props.pageIndex)
+}
+
+function onRepeatAllClick() {
+  toggleRepeatAll()
 }
 
 function onSeekInput(event) {
@@ -217,6 +223,14 @@ function onRemoveClick() {
         :disabled="!hasCues"
         aria-label="現在行をリピート"
         @click="onLoopClick"
+      >
+        🔂
+      </button>
+      <button
+        type="button"
+        :class="['audio-button', { active: isRepeatingAll }]"
+        aria-label="全体をリピート"
+        @click="onRepeatAllClick"
       >
         🔁
       </button>
