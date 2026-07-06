@@ -21,7 +21,10 @@ import { usePlaybackSpeed } from './usePlaybackSpeed.js'
 // - audio.play() は iOS のユーザージェスチャ要件のため、必ず click /
 //   keydown ハンドラから呼ばれるメソッド内でのみ実行する (例外はループ
 //   再生継続のための ended からの再 play で、これは Safari が許容する)。
-// - 状態の不変条件: isRecording ⇒ isPlaying ∧ ¬isLooping / isLooping ⇒ hasCues
+// - リピートは 2 種類あり排他: isLooping = 現在行リピート (cues 必須)、
+//   isRepeatingAll = コンテンツ全体リピート (終端で先頭へ戻る。cues 不要)。
+// - 状態の不変条件: isRecording ⇒ isPlaying ∧ ¬isLooping ∧ ¬isRepeatingAll /
+//   isLooping ⇒ hasCues ∧ ¬isRepeatingAll / isRepeatingAll ⇒ hasAudio ∧ ¬isLooping
 
 // ページめくりを音声より先行させる秒数。行頭ちょうどでめくると視線移動が
 // 発話に遅れるため、少しだけ早くめくる。
@@ -37,6 +40,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   const hasAudio = ref(false)
   const isPlaying = ref(false)
   const isLooping = ref(false)
+  const isRepeatingAll = ref(false)
   const isRecording = ref(false)
   const currentTime = ref(0)
   const duration = ref(0)
@@ -130,6 +134,15 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
       audio.play().catch(() => {})
       return
     }
+    if (isRepeatingAll.value) {
+      // コンテンツ全体リピート: 先頭へ戻して再生を続ける。次フレームの tick が
+      // 自動めくりを再開するが、巻き戻りを即座に表示へ反映するため先頭ページも
+      // ここで指定する。
+      audio.currentTime = 0
+      onAutoPage(0)
+      audio.play().catch(() => {})
+      return
+    }
     // 自動めくりは最終ページで止まる。HomePage へは戻らずユーザーに委ねる。
   }
 
@@ -149,6 +162,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   function resetPlaybackState() {
     audio.pause()
     isLooping.value = false
+    isRepeatingAll.value = false
     isRecording.value = false
     recordedCues = []
     recordedCount.value = 0
@@ -274,10 +288,36 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
       isLooping.value = false
       return
     }
+    // 行リピートとコンテンツ全体リピートは排他。
+    isRepeatingAll.value = false
     loopIndex = clampIndex(pageIndex)
     isLooping.value = true
     audio.currentTime = cues.value[loopIndex]
     if (!isPlaying.value) audio.play().catch(() => {})
+  }
+
+  // コンテンツ全体のリピートをトグルする。再生し終わったら (onEnded) 先頭へ
+  // 戻って再生を続けるモード。行リピートと違い cues は不要で、自動めくりも
+  // 通常どおり継続する。行リピートとは排他。
+  //
+  // ON にした時点で停止中なら再生を開始する (toggleLoop と同じ方針)。これが
+  // ないと、音声を最後まで聴いて終端で止まった後に押しても onEnded が既に
+  // 発火済みでループに入れない。cues 無しの sound only (1 ページ) を文字なしで
+  // シャドーイングする用途では、🔁 を押した瞬間からループ再生に入りたい。
+  // 終端で止まっている場合のみ先頭へ巻き戻し、途中停止中はその位置から続けて
+  // 次の終端でループさせる。
+  function toggleRepeatAll() {
+    if (!hasAudio.value || isRecording.value) return
+    if (isRepeatingAll.value) {
+      isRepeatingAll.value = false
+      return
+    }
+    isLooping.value = false
+    isRepeatingAll.value = true
+    if (!isPlaying.value) {
+      if (audio.ended) audio.currentTime = 0
+      audio.play().catch(() => {})
+    }
   }
 
   // ユーザーの手動ページ移動 (タップ / ←→ / Space) の後に ReaderPage から
@@ -304,6 +344,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   function startRecording() {
     if (!hasAudio.value || lineCount.value === 0 || isRecording.value) return
     isLooping.value = false
+    isRepeatingAll.value = false
     recordedCues = []
     recordedCount.value = 0
     isRecording.value = true
@@ -364,6 +405,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     hasAudio: readonly(hasAudio),
     isPlaying: readonly(isPlaying),
     isLooping: readonly(isLooping),
+    isRepeatingAll: readonly(isRepeatingAll),
     isRecording: readonly(isRecording),
     currentTime: readonly(currentTime),
     duration: readonly(duration),
@@ -382,6 +424,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     setSpeed,
     persistSpeed,
     toggleLoop,
+    toggleRepeatAll,
     onManualNavigate,
     // キュー記録
     startRecording,
