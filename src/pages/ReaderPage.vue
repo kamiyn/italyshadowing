@@ -3,16 +3,20 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { fetchLesson } from '../lib/dataClient.js'
 import {
+  KEY_ARROW_DOWN,
   KEY_ARROW_LEFT,
   KEY_ARROW_RIGHT,
   KEY_ARROW_UP,
+  KEY_ENTER,
   KEY_ESCAPE,
   KEY_SPACE,
 } from '../lib/keys.js'
 import { useKeyboard } from '../composables/useKeyboard.js'
 import { useFontScale } from '../composables/useFontScale.js'
 import { usePinchFontScale } from '../composables/usePinchFontScale.js'
+import { useAudioPlayer } from '../composables/useAudioPlayer.js'
 import ReaderText from '../components/ReaderText.vue'
+import AudioControlBar from '../components/AudioControlBar.vue'
 
 const props = defineProps({
   filename: {
@@ -54,6 +58,9 @@ async function load(name) {
     // where the fetch resolved successfully *just* before abort() was called.
     if (controller.signal.aborted) return
     lesson.value = data
+    // 教材確定後 (= lineCount 確定後) に、この教材用の保存済み音声とキューを
+    // 復元する。キューの行数検証に lines.length が要るためこの位置で呼ぶ。
+    player.reloadForLesson(name)
   }
   catch (e) {
     if (controller.signal.aborted || e.name === 'AbortError') return
@@ -130,6 +137,26 @@ function goToPage(next) {
   })
 }
 
+// 音声プレイヤー。ページ位置の正本は URL (?page=) のままとし、再生位置に
+// 同期した自動ページめくりは onAutoPage 経由で goToPage を呼ぶ形にする
+// (goToPage は同値なら早期 return する冪等な関数なので毎フレーム呼ばれても
+// 安全)。goToPage は関数宣言なので hoisting によりここから参照できる。
+const player = useAudioPlayer({
+  filename: props.filename,
+  lineCount: computed(() => lines.value.length),
+  onAutoPage: goToPage,
+})
+
+// ユーザー操作 (タップ / ←→ / Space) によるページ移動の共通エントリ。
+// 自動めくり (goToPage 直呼び) と違い、再生中なら音声を移動先の行頭へ
+// シークして「ページ移動 = その行を聴き直す」操作にする。
+function manualGoToPage(next) {
+  if (lines.value.length === 0) return
+  const clamped = Math.min(Math.max(next, 0), lines.value.length - 1)
+  goToPage(clamped)
+  player.onManualNavigate(clamped)
+}
+
 // 「次へ」操作の共通エントリ。最終ページまたは コンテンツ空 の状態から更に次へ進もうとした場合は
 // HomePage に戻す。キー操作 (Space / →) と画面タップの両方から呼ばれる。
 function advanceOrExit() {
@@ -137,7 +164,7 @@ function advanceOrExit() {
     goHome()
     return
   }
-  goToPage(effectivePage.value + 1)
+  manualGoToPage(effectivePage.value + 1)
 }
 
 // .reader-shell (本文含む) をタップ/クリックしたとき次へ進める。
@@ -149,10 +176,16 @@ function handleShellClick(event) {
   // consumeRecentPinch() は直後の 1 回だけ true を返しガードを解除する。
   if (consumeRecentPinch()) return
 
+  // キュー記録中は画面全体が「行頭タップ」の記録ボタンになる。
+  if (player.isRecording.value) {
+    player.recordCueTap()
+    return
+  }
+
   const shell = readerShellRef.value
   const paddingLeft = parseFloat(getComputedStyle(shell).paddingLeft)
   if (event.clientX - shell.getBoundingClientRect().left < paddingLeft) {
-    goToPage(effectivePage.value - 1)
+    manualGoToPage(effectivePage.value - 1)
     return
   }
 
@@ -173,10 +206,25 @@ function handleProgressClick() {
 }
 
 useKeyboard((event) => {
+  // キュー記録中は Space = 行頭タップ / Escape = 中止 のみ受け付ける。
+  // ページ移動や HomePage への離脱で記録が壊れるのを防ぐため他キーは無効。
+  if (player.isRecording.value) {
+    switch (event.key) {
+      case KEY_SPACE:
+        event.preventDefault()
+        player.recordCueTap()
+        break
+      case KEY_ESCAPE:
+        event.preventDefault()
+        player.cancelRecording()
+        break
+    }
+    return
+  }
   switch (event.key) {
     case KEY_ARROW_LEFT:
       event.preventDefault()
-      goToPage(effectivePage.value - 1)
+      manualGoToPage(effectivePage.value - 1)
       break
     case KEY_ARROW_RIGHT:
     case KEY_SPACE:
@@ -189,6 +237,17 @@ useKeyboard((event) => {
     case KEY_ESCAPE:
       event.preventDefault()
       goHome()
+      break
+    case KEY_ENTER:
+      // 再生 / 一時停止。keydown ハンドラ起点なので iOS のユーザー
+      // ジェスチャ要件を満たす。
+      event.preventDefault()
+      player.togglePlay(effectivePage.value)
+      break
+    case KEY_ARROW_DOWN:
+      // 現在行のリピート再生をトグルする。
+      event.preventDefault()
+      player.toggleLoop(effectivePage.value)
       break
   }
 })
@@ -234,6 +293,11 @@ useKeyboard((event) => {
       >
         {{ progressLabel }}
       </p>
+      <AudioControlBar
+        v-if="hasLines"
+        :player="player"
+        :page-index="effectivePage"
+      />
     </div>
   </main>
 </template>

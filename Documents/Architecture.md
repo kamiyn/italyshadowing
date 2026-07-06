@@ -57,8 +57,21 @@ flowchart TD
 - `ArrowLeft` / `ArrowRight` で前後ページへ移動する
 - `Space` でも次ページへ移動する
 - `ArrowUp` または `Escape` でトップページへ戻る
+- `Enter` で音声の再生 / 一時停止、`ArrowDown` で現在行のリピートをトグルする (音声機能は下記)
 
 トップページと教材ページは、Vue 的には別コンポーネントとして分離する。
+
+### 3. 音声再生と自動ページめくり
+
+教材ごとの MP3 音声はユーザーが端末内へ読み込み、IndexedDB に保存する (リポジトリにはコミットしない。決定の背景: ADR-007)。行頭タイミング (キュー) はアプリ内の記録モードで作成し localStorage に保存する。責務は次のように分割する。
+
+- `src/lib/audioStore.js` — IndexedDB への MP3 Blob の get / put / delete (throw しない best-effort ラッパー)
+- `src/lib/cueStore.js` — キュー (行開始秒の昇順配列) の load / save / delete。load 時に行数一致まで検証し、不一致は「未記録」に落とす
+- `src/composables/usePlaybackSpeed.js` — 再生速度 (0.6〜1.0 倍) の singleton 状態と localStorage 永続化 (useFontScale と同型)
+- `src/composables/useAudioPlayer.js` — `new Audio()` の所有、object URL の生成/破棄、再生・シーク・ループ・キュー記録の状態機械、および VueUse `useRafFn` による毎フレーム同期。再生位置 + 0.1 秒 (先行めくり) からページ番号を純関数で計算し、ReaderPage の `goToPage` (冪等) を呼ぶ
+- `src/components/AudioControlBar.vue` — ReaderPage 下端の操作バー (読み込み / 再生 / シーク / 速度 / ループ / 記録 / 管理)
+
+ページ位置の正本は従来どおり URL (`?page=`) であり、自動ページめくりも `goToPage` → `router.replace` を経由する。ユーザーの手動ページ移動は ReaderPage の `manualGoToPage` に集約し、再生中であれば音声を移動先の行頭へシークする (自動めくりとの違いはこのシークの有無だけ)。
 
 ## データ設計
 
@@ -212,6 +225,11 @@ flowchart TD
   - `lines` の HTML 描画
   - メタ情報の非表示制御
   - 読書中のキー操作
+  - `useAudioPlayer` の生成と手動ページ移動 (`manualGoToPage`) の集約
+- 音声まわり (`src/lib/audioStore.js` / `src/lib/cueStore.js` / `src/composables/useAudioPlayer.js` / `src/composables/usePlaybackSpeed.js` / `src/components/AudioControlBar.vue`)
+  - MP3 Blob とキューのデバイスローカル永続化 (ADR-007)
+  - 再生・速度・ループ・キュー記録の状態管理
+  - 再生位置に同期した自動ページめくり (0.1 秒先行)
 - ルーター
   - `filename` と `page` の解釈
   - URL 更新による状態遷移
