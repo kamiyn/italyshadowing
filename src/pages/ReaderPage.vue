@@ -247,9 +247,9 @@ useKeyboard((event) => {
       player.togglePlay(effectivePage.value)
       break
     case KEY_ARROW_DOWN:
-      // 現在行のリピート再生をトグルする。
+      // リピートモードを循環させる (オフ → 全体 → 現在ページ → オフ)。
       event.preventDefault()
-      player.toggleLoop(effectivePage.value)
+      player.cycleRepeatMode(effectivePage.value)
       break
   }
 })
