@@ -29,8 +29,10 @@ import { usePlaybackSpeed } from './usePlaybackSpeed.js'
 // - 状態の不変条件: isRecording ⇒ isPlaying ∧ repeatMode = 'none' /
 //   repeatMode = 'one' ⇒ hasCues
 
-// ページめくりを音声より先行させる秒数。行頭ちょうどでめくると視線移動が
-// 発話に遅れるため、少しだけ早くめくる。
+// ページめくりを音声より先行させる秒数 (等速再生時)。行頭ちょうどでめくると
+// 視線移動が発話に遅れるため、少しだけ早くめくる。視線移動の遅れは実時間
+// (壁時計) で一定なので、実際にメディア時間へ加算する先行量は playbackRate に
+// 比例させる (pageTurnLeadSeconds 参照)。この定数はあくまで等速時の値。
 export const PAGE_TURN_LEAD_SECONDS = 0.1
 
 // リピートモードの値。ミュージックアプリ準拠で 1 ボタン循環させるため、
@@ -63,6 +65,14 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   // 'all' = コンテンツ全体リピート。
   const isLineRepeat = computed(() => repeatMode.value === REPEAT_ONE)
   const isAllRepeat = computed(() => repeatMode.value === REPEAT_ALL)
+
+  // 実時間で一定の先行にするための、メディア時間での先行量。lineIndexForTime は
+  // メディア時間 (audio.currentTime) で判定するため、実時間の先行を一定に保つには
+  // 加算するメディア時間を playbackRate に比例させる必要がある。等速で
+  // PAGE_TURN_LEAD_SECONDS、0.6 倍速なら 0.06 秒 (= 実時間 0.1 秒先行)。固定値の
+  // まま低速再生すると実時間の先行が伸び (0.1 / 0.6 ≒ 0.167 秒)、自動めくりが
+  // 早すぎたり、行頭ちょうどへシークする手動移動 (先行なし) との落差が出る。
+  const pageTurnLeadSeconds = computed(() => PAGE_TURN_LEAD_SECONDS * playbackSpeed.value)
 
   let currentFilename = filename
   let objectUrl = null
@@ -116,7 +126,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
 
     if (cues.value) {
       if (manualNavTarget !== null) {
-        if (lineIndexForTime(t + PAGE_TURN_LEAD_SECONDS) === manualNavTarget) {
+        if (lineIndexForTime(t + pageTurnLeadSeconds.value) === manualNavTarget) {
           manualNavTarget = null
         }
         else {
@@ -124,7 +134,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
           return
         }
       }
-      onAutoPage(lineIndexForTime(t + PAGE_TURN_LEAD_SECONDS))
+      onAutoPage(lineIndexForTime(t + pageTurnLeadSeconds.value))
     }
   }
 
@@ -275,7 +285,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     }
     if (cues.value) {
       const target = clampIndex(pageIndex)
-      if (audio.ended || lineIndexForTime(audio.currentTime + PAGE_TURN_LEAD_SECONDS) !== target) {
+      if (audio.ended || lineIndexForTime(audio.currentTime + pageTurnLeadSeconds.value) !== target) {
         audio.currentTime = cues.value[target]
       }
     }
@@ -298,7 +308,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     audio.currentTime = clamped
     currentTime.value = clamped
     if (cues.value) {
-      onAutoPage(lineIndexForTime(clamped + PAGE_TURN_LEAD_SECONDS))
+      onAutoPage(lineIndexForTime(clamped + pageTurnLeadSeconds.value))
     }
   }
 
