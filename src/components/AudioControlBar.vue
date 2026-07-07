@@ -5,6 +5,7 @@ import {
   PLAYBACK_SPEED_MIN,
   PLAYBACK_SPEED_STEP,
 } from '../composables/usePlaybackSpeed.js'
+import { REPEAT_ALL, REPEAT_NONE, REPEAT_ONE } from '../composables/useAudioPlayer.js'
 
 // ReaderPage 下端の音声操作バー。useAudioPlayer が返すオブジェクトを
 // `player` prop としてまるごと受け取る (状態は readonly ref なのでここから
@@ -24,8 +25,7 @@ const props = defineProps({
 const {
   hasAudio,
   isPlaying,
-  isLooping,
-  isRepeatingAll,
+  repeatMode,
   isRecording,
   currentTime,
   duration,
@@ -40,8 +40,7 @@ const {
   seekTo,
   setSpeed,
   persistSpeed,
-  toggleLoop,
-  toggleRepeatAll,
+  cycleRepeatMode,
   startRecording,
   cancelRecording,
 } = props.player
@@ -94,13 +93,25 @@ function onPlayClick() {
   togglePlay(props.pageIndex)
 }
 
-function onLoopClick() {
-  toggleLoop(props.pageIndex)
+function onRepeatClick() {
+  cycleRepeatMode(props.pageIndex)
 }
 
-function onRepeatAllClick() {
-  toggleRepeatAll()
-}
+// リピートは 1 ボタンで オフ → 全体 → 現在ページ → オフ と循環する。
+// 現在ページリピートは 🔂 (1 曲リピート記号)、それ以外は 🔁 を表示し、
+// オフ以外のときだけ active スタイルを付ける。
+const isRepeatActive = computed(() => repeatMode.value !== REPEAT_NONE)
+const repeatIcon = computed(() => (repeatMode.value === REPEAT_ONE ? '🔂' : '🔁'))
+const repeatLabel = computed(() => {
+  switch (repeatMode.value) {
+    case REPEAT_ALL:
+      return 'リピート: 全体'
+    case REPEAT_ONE:
+      return 'リピート: 現在ページ'
+    default:
+      return 'リピート: オフ'
+  }
+})
 
 function onSeekInput(event) {
   seekTo(Number(event.target.value))
@@ -219,20 +230,11 @@ function onRemoveClick() {
       <span class="audio-speed-label">{{ speedLabel }}</span>
       <button
         type="button"
-        :class="['audio-button', { active: isLooping }]"
-        :disabled="!hasCues"
-        aria-label="現在行をリピート"
-        @click="onLoopClick"
+        :class="['audio-button', { active: isRepeatActive }]"
+        :aria-label="repeatLabel"
+        @click="onRepeatClick"
       >
-        🔂
-      </button>
-      <button
-        type="button"
-        :class="['audio-button', { active: isRepeatingAll }]"
-        aria-label="全体をリピート"
-        @click="onRepeatAllClick"
-      >
-        🔁
+        {{ repeatIcon }}
       </button>
       <button
         type="button"
