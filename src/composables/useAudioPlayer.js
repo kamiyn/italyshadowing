@@ -102,8 +102,13 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
       if (Number.isFinite(end) && t >= end) {
         audio.currentTime = list[loopIndex]
       }
-      // ループ中は自動めくりを抑止する (0.1 秒先行が次ページを一瞬
-      // 見せてしまうのを防ぐ意味もある)。
+      // スライドはループ対象行 (loopIndex) へ決め打ちで固定する。0.1 秒先行の
+      // lineIndexForTime を使わないことで、音声の実位置と表示が常に一致し、
+      // ループ末尾で次ページが一瞬見える現象も防ぐ。onAutoPage は同値なら
+      // 早期 return する冪等関数なので毎フレーム呼んでよい。リピート開始時に
+      // 音声をシークせず、この tick 経由で表示を実位置へ寄せる設計のため、
+      // ここでの固定が音声とスライドのズレを解消する要になる。
+      onAutoPage(loopIndex)
       return
     }
 
@@ -330,7 +335,8 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
 
   // モードを適用し、必要な再生副作用を起こす。ボタン/キー起点で呼ばれるため
   // audio.play() のユーザージェスチャ要件を満たす。
-  // - 'one': 現在ページの行頭へシークしてループ。停止中なら再生も開始する。
+  // - 'one': 現在ページをループ対象にする。ループ末尾での巻き戻しと表示の
+  //   固定は tick に委ねる (下記の理由参照)。
   // - 'all': 停止中なら再生を開始する (終端で止まっていれば先頭へ巻き戻す)。
   //   これにより cues 無しの sound only (1 ページ) を文字なしでシャドーイング
   //   する際、押した瞬間からループ再生に入れる。終端で onEnded が発火済みでも
@@ -340,9 +346,22 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     repeatMode.value = mode
     if (mode === REPEAT_ONE) {
       if (!cues.value) return
-      loopIndex = clampIndex(pageIndex)
-      audio.currentTime = cues.value[loopIndex]
-      if (!isPlaying.value) audio.play().catch(() => {})
+      if (isPlaying.value) {
+        // 再生中は audio.currentTime が音声の実位置で、表示ページは 0.1 秒
+        // 先行しているだけ。ここで pageIndex (先行した表示) の行頭へシークすると
+        // 境界付近で音声が次行へ飛び「音声とスライドがずれる」。シークはせず、
+        // いま実際に鳴っている行をループ対象にし、行末で tick に巻き戻させる。
+        // 表示は tick の onAutoPage(loopIndex) が実位置へ寄せる。
+        loopIndex = lineIndexForTime(audio.currentTime)
+      }
+      else {
+        // 停止中は停止中のページ移動が音声をシークしないため、audio.currentTime が
+        // 表示ページと乖離していることがある。表示ページ (URL 正本) を信頼して
+        // その行頭へ合わせてから再生を開始する。
+        loopIndex = clampIndex(pageIndex)
+        audio.currentTime = cues.value[loopIndex]
+        audio.play().catch(() => {})
+      }
     }
     else if (mode === REPEAT_ALL) {
       if (!isPlaying.value) {
