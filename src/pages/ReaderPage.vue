@@ -153,8 +153,10 @@ const player = useAudioPlayer({
 function manualGoToPage(next) {
   if (lines.value.length === 0) return
   const clamped = Math.min(Math.max(next, 0), lines.value.length - 1)
-  goToPage(clamped)
+  // 再生中は tick() が古い currentTime で onAutoPage を呼ぶ競合があるため、
+  // 音声シークを URL 更新より先に行う (onManualNavigate 内のガードと併用)。
   player.onManualNavigate(clamped)
+  goToPage(clamped)
 }
 
 // 「次へ」操作の共通エントリ。最終ページまたは コンテンツ空 の状態から更に次へ進もうとした場合は

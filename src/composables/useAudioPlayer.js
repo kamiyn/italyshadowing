@@ -54,6 +54,9 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   let objectUrl = null
   let recordedCues = []
   let loopIndex = 0
+  // 手動ページ移動直後、ブラウザが currentTime のシークを反映するまで
+  // tick() の自動めくりが古い位置でページを戻さないよう一時的に固定する。
+  let manualNavTarget = null
   // reloadForLesson の非同期取得 (getAudioBlob) の世代トークン。教材切り替え
   // だけでなく、同一教材内で import / 削除が割り込んだ場合にも、進行中の
   // 古い取得結果で音声ソースを上書きしないためのガードに使う。
@@ -93,6 +96,15 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     if (isRecording.value) return // 記録中のページはタップが駆動する
 
     if (cues.value) {
+      if (manualNavTarget !== null) {
+        if (lineIndexForTime(t + PAGE_TURN_LEAD_SECONDS) === manualNavTarget) {
+          manualNavTarget = null
+        }
+        else {
+          onAutoPage(manualNavTarget)
+          return
+        }
+      }
       onAutoPage(lineIndexForTime(t + PAGE_TURN_LEAD_SECONDS))
     }
   }
@@ -111,6 +123,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   function onPauseEvent() {
     isPlaying.value = false
     pauseTick()
+    manualNavTarget = null
     currentTime.value = audio.currentTime
   }
 
@@ -166,6 +179,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     isRecording.value = false
     recordedCues = []
     recordedCount.value = 0
+    manualNavTarget = null
     currentTime.value = 0
     duration.value = 0
   }
@@ -259,6 +273,7 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
   function seekTo(seconds) {
     if (!hasAudio.value || isRecording.value) return
     isLooping.value = false
+    manualNavTarget = null
     const end = Number.isFinite(duration.value) ? duration.value : seconds
     const clamped = Math.min(Math.max(seconds, 0), end)
     audio.currentTime = clamped
@@ -329,11 +344,15 @@ export function useAudioPlayer({ filename, lineCount, onAutoPage }) {
     const target = clampIndex(index)
     if (isLooping.value) {
       loopIndex = target
+      manualNavTarget = target
       audio.currentTime = cues.value[target]
+      currentTime.value = audio.currentTime
       return
     }
     if (!isPlaying.value) return
+    manualNavTarget = target
     audio.currentTime = cues.value[target]
+    currentTime.value = audio.currentTime
   }
 
   // ── キュー記録 ──────────────────────────────────────
