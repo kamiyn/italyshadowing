@@ -309,10 +309,9 @@ function onRemoveClick() {
   position: absolute;
   /*
    * 最下端に置くと iPhone のホームインジケータ (画面下からのスワイプ) と
-   * バー内のボタン/スライダー操作が干渉するため、ツールバー領域の高さ分
-   * (約 3rem) と端末の下部セーフエリアぶんだけ上へ持ち上げる。
+   * バー内のボタン/スライダー操作が干渉するため上へ持ち上げる。
    */
-  bottom: calc(0.75rem + 3rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(0.75rem + 1.5rem + env(safe-area-inset-bottom, 0px));
   left: 50%;
   transform: translateX(-50%);
   width: min(92%, 640px);
